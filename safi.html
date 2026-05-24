@@ -281,23 +281,8 @@ body { background: var(--dk); color: var(--tx); display: flex; flex-direction: c
   <div class="scard">
     <div style="font-size:32px;text-align:center;margin-bottom:12px">💚</div>
     <div class="stit">مرحباً بك في صافي</div>
-    <div class="ssub" id="demoMessage">مديرك المالي الذكي — نسخة عرض تجريبية<br><span style="color:var(--am)">⚠️ هذه نسخة Demo — كل تحليل يستهلك من رصيد API الخاص بالمطوّر</span></div>
-    
-    <div id="demoSetupSection" style="display:none">
-      <label class="flbl">مفتاح Demo (للمطوّر فقط)</label>
-      <input type="password" class="finput" id="apiIn" placeholder="sk-ant-api03-...">
-      <div style="font-size:10px;color:var(--tx3);margin-top:6px;line-height:1.6">
-        هذا المفتاح يُخفى عن المستخدمين النهائيين. أدخله مرة واحدة لتفعيل وضع العرض.
-      </div>
-    </div>
-    
-    <div style="text-align:center;margin:16px 0 6px">
-      <button onclick="document.getElementById('demoSetupSection').style.display='block';this.style.display='none'" 
-              style="background:transparent;border:1px dashed var(--bd);color:var(--tx3);padding:6px 14px;border-radius:6px;font-size:10px;cursor:pointer;font-family:var(--font)">
-        🔑 أنا المطوّر — إعداد مفتاح Demo
-      </button>
-    </div>
-    
+    <div class="ssub">مديرك المالي الذكي<br><span style="color:var(--tx3)">اختر دولتك ولغة التقرير لتبدأ — لا حاجة لأي إعداد آخر</span></div>
+
     <label class="flbl" style="margin-top:14px">دولة التسجيل (للفحوصات الضريبية)</label>
     <select class="finput" id="countryIn" style="direction:rtl;text-align:right">
       <option value="sa">🇸🇦 السعودية</option>
@@ -320,9 +305,7 @@ body { background: var(--dk); color: var(--tx); display: flex; flex-direction: c
     </select>
     <button class="bsave" onclick="saveKey()">حفظ والمتابعة ←</button>
     <div class="hint">
-      ١. افتح <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a><br>
-      ٢. Billing → Add Credits<br>
-      ٣. API Keys → Create Key → انسخ المفتاح
+      ✓ الأداة جاهزة للاستخدام مباشرة. ارفع ملفاتك المالية (Excel · CSV · PDF · صور) واختر نوع التحليل.
     </div>
   </div>
 </div>
@@ -335,10 +318,10 @@ body { background: var(--dk); color: var(--tx); display: flex; flex-direction: c
       <div class="logo-sub" data-t="subtitle">مديرك المالي الذكي</div>
     </div>
   </div>
-  <button class="api-pill" onclick="document.getElementById('setupOv').style.display='flex'">
-    <div class="dot" id="sdot"></div>
-    <span id="slbl" data-t="apiPill">إعداد API</span>
-  </button>
+  <div class="api-pill" style="cursor:default">
+    <div class="dot on" id="sdot"></div>
+    <span id="slbl">جاهز</span>
+  </div>
 </div>
 
 <div class="app">
@@ -395,18 +378,8 @@ body { background: var(--dk); color: var(--tx); display: flex; flex-direction: c
 </div>
 
 <script>
-// ═══ وضع Demo — مفتاح API مخفي للعرض فقط ═══
-var DEMO_MODE = true; // تغييرها لـ false للنسخة الإنتاجية
-var DEMO_KEY_STORAGE = 'safi_demo_key'; // مفتاح مخفي للعرض
-var KEY = '';
-
-if (DEMO_MODE) {
-  // في وضع Demo: نستخدم مفتاح محفوظ مسبقاً (مخفي عن المالك)
-  KEY = localStorage.getItem(DEMO_KEY_STORAGE) || '';
-} else {
-  // في الوضع الإنتاجي: المستخدم يدخل مفتاحه
-  KEY = localStorage.getItem('ls_k') || '';
-}
+// ═══ إعداد الاتصال — عبر وسيط Cloudflare Worker (المفتاح سري على السيرفر) ═══
+var WORKER_URL = 'https://polished-silence-86c7safi-proxy.moote7a.workers.dev';
 
 var COUNTRY = localStorage.getItem('ls_country') || 'sa';
 var LANG = localStorage.getItem('ls_lang') || 'ar';
@@ -514,40 +487,19 @@ window.onload = function() {
   // استرجاع التقارير السابقة
   loadHistory();
   renderHistory();
-  if (KEY && KEY.indexOf('sk-ant') === 0) {
-    setConn();
-  } else {
+  setConn();
+  // نعرض شاشة الإعداد مرة واحدة فقط (لاختيار الدولة واللغة)
+  if (!localStorage.getItem('ls_setup_done')) {
     document.getElementById('setupOv').style.display = 'flex';
   }
 };
 
 function saveKey() {
-  var k = document.getElementById('apiIn').value.trim();
-  
-  if (DEMO_MODE) {
-    // في وضع Demo: حفظ المفتاح في مكان خاص
-    if (k && k.indexOf('sk-ant') !== 0) { 
-      alert('المفتاح يجب أن يبدأ بـ sk-ant'); 
-      return; 
-    }
-    if (k) {
-      KEY = k;
-      localStorage.setItem(DEMO_KEY_STORAGE, k);
-    }
-  } else {
-    // الوضع الإنتاجي: التحقق الكامل
-    if (!k || k.indexOf('sk-ant') !== 0) { 
-      alert(LANG==='en'?'Key must start with sk-ant':'المفتاح يجب أن يبدأ بـ sk-ant'); 
-      return; 
-    }
-    KEY = k;
-    localStorage.setItem('ls_k', k);
-  }
-  
   COUNTRY = document.getElementById('countryIn').value;
   LANG = document.getElementById('langIn').value;
   localStorage.setItem('ls_country', COUNTRY);
   localStorage.setItem('ls_lang', LANG);
+  localStorage.setItem('ls_setup_done', '1');
   applyLang();
   document.getElementById('setupOv').style.display = 'none';
   setConn();
@@ -555,7 +507,7 @@ function saveKey() {
 
 function setConn() {
   document.getElementById('sdot').classList.add('on');
-  document.getElementById('slbl').textContent = 'متصل';
+  document.getElementById('slbl').textContent = (LANG === 'en') ? 'Ready' : 'جاهز';
 }
 
 var dz = document.getElementById('dropZ');
@@ -741,16 +693,14 @@ function callAPI(parts, question, sys, maxTok) {
   buf += '\n\n' + question;
   blocks.push({ type: 'text', text: buf });
 
-  return fetch('https://api.anthropic.com/v1/messages', {
+  // الطلب يذهب إلى الوسيط (Worker) — هو من يحمل المفتاح ويكلّم Anthropic
+  return fetch(WORKER_URL, {
     method: 'POST',
     headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': KEY,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true'
+      'Content-Type': 'application/json'
     },
     body: JSON.stringify({
-      model: 'claude-sonnet-4-6',
+      model: 'claude-sonnet-4-20250514',
       max_tokens: maxTok,
       system: sys,
       messages: [{ role: 'user', content: blocks }]
