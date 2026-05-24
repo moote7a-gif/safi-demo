@@ -1,0 +1,3192 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>صافي — مديرك المالي الذكي</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+:root {
+  --gold: #C9A84C; --gold-l: #E8C97A; --gold-d: rgba(201,168,76,.15);
+  --dk: #0D0D0E; --dk2: #141416; --dk3: #1C1C1F; --dk4: #252528;
+  --bd: rgba(255,255,255,.07); --bd-g: rgba(201,168,76,.3);
+  --tx: #F0EDE8; --tx2: #A8A49E; --tx3: #6B6762;
+  --gn: #4CAF7A; --gn-d: rgba(76,175,122,.12);
+  --rd: #E05A4A; --rd-d: rgba(224,90,74,.12);
+  --am: #E0A84A; --am-d: rgba(224,168,74,.12);
+  --font: 'IBM Plex Sans Arabic', Arial, sans-serif;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; font-family: var(--font); }
+body { background: var(--dk); color: var(--tx); display: flex; flex-direction: column; }
+
+.topbar { flex-shrink: 0; background: rgba(13,13,14,.95); backdrop-filter: blur(20px); border-bottom: 1px solid var(--bd); padding: 0 1.5rem; height: 54px; display: flex; align-items: center; justify-content: space-between; }
+.logo { display: flex; align-items: center; gap: 10px; }
+.logo-mark { width: 30px; height: 30px; background: linear-gradient(135deg, var(--gold), var(--gold-l)); border-radius: 7px; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: #0D0D0E; }
+.logo-name { font-size: 14px; font-weight: 600; }
+.logo-sub { font-size: 10px; color: var(--tx3); }
+
+/* ── تحسينات الجوال ── */
+@media (max-width: 768px) {
+  .topbar { padding: 0 1rem; height: 50px; }
+  .logo-mark { width: 26px; height: 26px; font-size: 12px; }
+  .logo-name { font-size: 13px; }
+  .logo-sub { display: none; }
+  .cont { flex-direction: column; }
+  .sb { width: 100%; max-width: 100%; border-left: none; border-bottom: 1px solid var(--bd); }
+  .sb.hide { transform: translateY(-100%); }
+  .main { padding: .8rem; }
+  .rwrap { padding: 1rem; }
+  .health-wrap { flex-direction: column; align-items: stretch; }
+  .health-gauge { width: 110px; height: 110px; margin: 0 auto; }
+  .cmp-grid, .bud-head, .bud-row, .cmp-head, .cmp-row { grid-template-columns: 1fr; gap: 6px; }
+  .cmp-head, .bud-head { display: none; }
+  .cmp-lbl, .bud-c { font-size: 11px; }
+  .bud-inputs { grid-template-columns: 1fr; }
+  .kboxes { grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 7px; }
+}
+.logo-sub { font-size: 10px; color: var(--tx3); }
+.api-pill { display: flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 20px; border: 1px solid var(--bd); cursor: pointer; font-size: 11px; color: var(--tx2); background: none; font-family: var(--font); }
+.api-pill:hover { border-color: var(--bd-g); }
+.dot { width: 6px; height: 6px; border-radius: 50%; background: var(--tx3); }
+.dot.on { background: var(--gn); box-shadow: 0 0 5px var(--gn); }
+
+.app { flex: 1; display: flex; overflow: hidden; }
+.sidebar { width: 255px; flex-shrink: 0; border-left: 1px solid var(--bd); overflow-y: auto; background: var(--dk2); }
+.sidebar::-webkit-scrollbar { width: 3px; }
+.sidebar::-webkit-scrollbar-thumb { background: var(--dk4); border-radius: 2px; }
+.main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+.sb-sec { padding: .7rem; border-bottom: 1px solid var(--bd); }
+.sb-lbl { font-size: 10px; font-weight: 600; color: var(--tx3); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 7px; }
+.drop { border: 1.5px dashed var(--bd); border-radius: 8px; padding: 1rem; text-align: center; cursor: pointer; transition: .2s; }
+.drop:hover, .drop.drag { border-color: var(--bd-g); background: var(--gold-d); }
+.drop-ic { font-size: 20px; opacity: .5; margin-bottom: 4px; }
+.drop-t { font-size: 12px; font-weight: 500; color: var(--tx2); }
+.drop-s { font-size: 10px; color: var(--tx3); margin-top: 2px; }
+.flist { margin-top: 7px; display: flex; flex-direction: column; gap: 3px; }
+.fitem { display: flex; align-items: center; gap: 6px; padding: 5px 7px; background: var(--dk3); border-radius: 5px; font-size: 11px; color: var(--tx2); }
+.fn { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fsz { color: var(--tx3); font-size: 10px; flex-shrink: 0; }
+.fdel { cursor: pointer; color: var(--tx3); font-size: 14px; line-height: 1; flex-shrink: 0; }
+.fdel:hover { color: var(--rd); }
+.qbtn { display: block; width: 100%; text-align: right; padding: 7px 9px; background: var(--dk3); border: 1px solid var(--bd); border-radius: 5px; font-size: 11px; color: var(--tx2); cursor: pointer; font-family: var(--font); margin-bottom: 4px; line-height: 1.4; transition: .15s; }
+.qbtn:hover { background: var(--dk4); border-color: var(--bd-g); color: var(--tx); }
+.hitem { padding: 8px 9px; background: var(--dk3); border-radius: 5px; cursor: pointer; border: 1px solid transparent; margin-bottom: 4px; transition: .15s; }
+.hitem:hover { border-color: var(--bd-g); }
+.hq { font-size: 11px; color: var(--tx2); line-height: 1.4; margin-bottom: 2px; }
+.hm { font-size: 10px; color: var(--tx3); }
+
+.pbar { flex-shrink: 0; padding: .7rem 1rem; border-bottom: 1px solid var(--bd); display: flex; gap: 8px; align-items: center; background: var(--dk2); }
+.pinput { flex: 1; background: var(--dk3); border: 1px solid var(--bd); border-radius: 8px; padding: 9px 12px; font-size: 13px; color: var(--tx); font-family: var(--font); direction: rtl; resize: none; height: 38px; transition: border-color .2s, height .2s; }
+.pinput:focus { outline: none; border-color: var(--bd-g); height: 64px; }
+.pinput::placeholder { color: var(--tx3); }
+.bsend { padding: 9px 18px; background: linear-gradient(135deg, var(--gold), var(--gold-l)); border: none; border-radius: 8px; font-size: 13px; font-weight: 600; color: #0D0D0E; cursor: pointer; font-family: var(--font); white-space: nowrap; height: 38px; flex-shrink: 0; }
+.bsend:hover { opacity: .88; }
+.bsend:disabled { opacity: .4; cursor: not-allowed; }
+
+.out { flex: 1; overflow-y: auto; padding: 1rem; }
+.out::-webkit-scrollbar { width: 4px; }
+.out::-webkit-scrollbar-thumb { background: var(--dk4); border-radius: 2px; }
+
+.welcome { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; gap: 8px; text-align: center; }
+.welcome-ic { font-size: 36px; opacity: .25; margin-bottom: 4px; }
+.welcome-t { font-size: 15px; font-weight: 500; color: var(--tx2); }
+.welcome-s { font-size: 12px; color: var(--tx3); }
+
+.lwrap { display: flex; flex-direction: column; align-items: center; padding: 2.5rem; gap: .4rem; }
+.spin { width: 34px; height: 34px; border: 2px solid var(--bd); border-top-color: var(--gold); border-radius: 50%; animation: spin .7s linear infinite; margin-bottom: .5rem; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.lmsg { font-size: 13px; color: var(--tx2); font-weight: 500; }
+.lsteps { list-style: none; margin-top: .4rem; width: 100%; max-width: 280px; }
+.lstep { display: flex; align-items: center; gap: 7px; padding: 5px 0; font-size: 12px; color: var(--tx3); }
+.lstep.act { color: var(--tx2); }
+.lstep.done { color: var(--gn); }
+.sdot { width: 5px; height: 5px; border-radius: 50%; background: var(--tx3); flex-shrink: 0; }
+.lstep.act .sdot { background: var(--gold); animation: p 1s infinite; }
+.lstep.done .sdot { background: var(--gn); }
+@keyframes p { 0%,100%{opacity:1}50%{opacity:.3} }
+
+.rwrap { animation: fu .3s ease; }
+@keyframes fu { from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)} }
+.rhdr { display: flex; align-items: center; justify-content: space-between; margin-bottom: .75rem; }
+.rmeta { display: flex; align-items: center; gap: 8px; }
+.rbadge { background: var(--gold-d); border: 1px solid var(--bd-g); border-radius: 20px; padding: 2px 10px; font-size: 11px; color: var(--gold); font-weight: 500; }
+.rtime { font-size: 10px; color: var(--tx3); }
+.ract { display: flex; gap: 5px; }
+.bsm { padding: 4px 10px; font-size: 11px; background: var(--dk3); border: 1px solid var(--bd); border-radius: 5px; color: var(--tx2); cursor: pointer; font-family: var(--font); transition: .15s; }
+.bsm:hover { background: var(--dk4); color: var(--tx); }
+.bpdf { background: linear-gradient(135deg,var(--gold),var(--gold-l)); color: #0D0D0E; border-color: transparent; font-weight: 600; }
+.bpdf:hover { opacity: .88; color: #0D0D0E; }
+.bpdf:disabled { opacity: .4; cursor: not-allowed; }
+
+.sbox { background: var(--gold-d); border: 1px solid var(--bd-g); border-radius: 8px; padding: 12px 14px; margin-bottom: .9rem; font-size: 13px; line-height: 1.7; }
+.slbl { font-size: 10px; font-weight: 600; color: var(--gold); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 4px; }
+.kgrid { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin-bottom: .9rem; }
+.kcard { background: var(--dk3); border-radius: 8px; padding: 11px 13px; border-right: 3px solid var(--tx3); }
+.kcard.g { border-right-color: var(--gn); }
+.kcard.r { border-right-color: var(--rd); }
+.kcard.a { border-right-color: var(--am); }
+.klbl { font-size: 10px; color: var(--tx3); margin-bottom: 3px; }
+.kval { font-size: 16px; font-weight: 600; }
+.kcard.g .kval { color: var(--gn); }
+.kcard.r .kval { color: var(--rd); }
+.kcard.a .kval { color: var(--am); }
+.knote { font-size: 10px; color: var(--tx3); margin-top: 2px; }
+.sec { background: var(--dk2); border: 1px solid var(--bd); border-radius: 10px; padding: .9rem; margin-bottom: .7rem; }
+.stitle { font-size: 12px; font-weight: 600; color: var(--gold-l); margin-bottom: .65rem; padding-bottom: 5px; border-bottom: 1px solid var(--bd-g); }
+.cgrid { display: grid; grid-template-columns: 1fr 1fr; gap: .6rem; }
+.cbox { background: var(--dk3); border-radius: 8px; padding: .6rem; }
+.ctitle { font-size: 11px; color: var(--tx2); margin-bottom: 7px; text-align: center; font-weight: 500; }
+.cbox canvas { max-height: 150px; }
+.dtable { width: 100%; border-collapse: collapse; font-size: 12px; }
+.dtable th { background: var(--dk3); padding: 7px 9px; text-align: right; border: 1px solid var(--bd); font-weight: 600; color: var(--gold-l); font-size: 11px; }
+.dtable td { padding: 6px 9px; border: 1px solid var(--bd); color: var(--tx2); }
+.dtable tr:nth-child(even) td { background: rgba(255,255,255,.02); }
+.g { color: var(--gn); font-weight: 600; }
+.r { color: var(--rd); font-weight: 600; }
+.a { color: var(--am); font-weight: 600; }
+.bbar { margin-bottom: 9px; }
+.btop { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 3px; }
+.btrk { height: 8px; background: var(--dk4); border-radius: 4px; overflow: hidden; }
+.bfil { height: 100%; border-radius: 4px; }
+.rcard { background: var(--dk3); border: 1px solid var(--bd); border-radius: 8px; padding: 9px 11px; margin-bottom: 5px; display: flex; gap: 9px; }
+.rpri { width: 5px; border-radius: 3px; flex-shrink: 0; }
+.rtitle { font-size: 12px; font-weight: 600; color: var(--tx); margin-bottom: 2px; }
+.rdesc { font-size: 11px; color: var(--tx2); line-height: 1.5; }
+.rbdg { font-size: 10px; padding: 1px 7px; border-radius: 10px; margin-right: 4px; }
+.acard { display: flex; gap: 9px; padding: 9px 11px; background: var(--dk3); border-radius: 8px; margin-bottom: 5px; border: 1px solid var(--bd); }
+.anum { width: 26px; height: 26px; background: linear-gradient(135deg,var(--gold),var(--gold-l)); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: #0D0D0E; flex-shrink: 0; }
+.atitle { font-size: 12px; font-weight: 600; color: var(--tx); margin-bottom: 2px; }
+.adetail { font-size: 11px; color: var(--tx2); line-height: 1.5; margin-bottom: 5px; }
+.atags { display: flex; gap: 5px; flex-wrap: wrap; }
+.atag { font-size: 10px; padding: 2px 7px; border-radius: 10px; }
+.ttime { background: var(--gold-d); color: var(--gold); }
+.tkpi { background: var(--gn-d); color: var(--gn); }
+.ecrd { background: var(--rd-d); border: 1px solid rgba(224,90,74,.3); border-radius: 8px; padding: 11px 14px; font-size: 13px; color: #FF8A7A; }
+
+/* ── التنبيهات الذكية (CFO) ── */
+.alerts { margin-bottom: .9rem; }
+.alert { display: flex; gap: 9px; align-items: flex-start; border-radius: 8px; padding: 10px 12px; margin-bottom: 6px; font-size: 12px; line-height: 1.6; }
+.alert-up { background: var(--gn-d); border: 1px solid rgba(76,175,122,.3); }
+.alert-down { background: var(--rd-d); border: 1px solid rgba(224,90,74,.3); }
+.alert-warn { background: var(--am-d); border: 1px solid rgba(224,168,74,.3); }
+.alert-ic { font-size: 15px; flex-shrink: 0; line-height: 1.3; }
+.alert-up .alert-ic { color: var(--gn); }
+.alert-down .alert-ic { color: var(--rd); }
+.alert-warn .alert-ic { color: var(--am); }
+.alert-t { font-weight: 600; color: var(--tx); margin-bottom: 1px; }
+.alert-d { color: var(--tx2); }
+.alert-d strong.up { color: var(--gn); }
+.alert-d strong.down { color: var(--rd); }
+
+/* ── شريط أدوات التقرير ── */
+.tabbar { display: flex; gap: 4px; padding: .55rem 1rem; border-bottom: 1px solid var(--bd); background: var(--dk2); flex-shrink: 0; }
+.tab { padding: 5px 12px; font-size: 11px; background: none; border: 1px solid transparent; border-radius: 6px; color: var(--tx3); cursor: pointer; font-family: var(--font); transition: .15s; }
+.tab:hover { color: var(--tx2); }
+.tab.act { background: var(--dk3); border-color: var(--bd-g); color: var(--gold-l); }
+
+/* ── شاشة مقارنة الفترات ── */
+.cmp-pickbar { display: flex; gap: 8px; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; }
+.cmp-sel { background: var(--dk3); border: 1px solid var(--bd); border-radius: 7px; padding: 8px 11px; font-size: 12px; color: var(--tx); font-family: var(--font); direction: rtl; flex: 1; min-width: 140px; }
+.cmp-sel:focus { outline: none; border-color: var(--bd-g); }
+.cmp-vs { font-size: 11px; color: var(--tx3); font-weight: 600; }
+.cmp-grid { display: grid; grid-template-columns: 1fr; gap: 7px; }
+.cmp-row { display: grid; grid-template-columns: 1.3fr 1fr 1fr 0.9fr; gap: 8px; align-items: center; background: var(--dk3); border-radius: 8px; padding: 10px 12px; border-right: 3px solid var(--tx3); }
+.cmp-row.up { border-right-color: var(--gn); }
+.cmp-row.down { border-right-color: var(--rd); }
+.cmp-lbl { font-size: 12px; color: var(--tx2); font-weight: 500; }
+.cmp-v1, .cmp-v2 { font-size: 13px; font-weight: 600; }
+.cmp-v1 { color: var(--tx3); }
+.cmp-v2 { color: var(--tx); }
+.cmp-delta { font-size: 12px; font-weight: 700; text-align: left; }
+.cmp-delta.up { color: var(--gn); }
+.cmp-delta.down { color: var(--rd); }
+.cmp-delta.flat { color: var(--tx3); }
+.cmp-head { display: grid; grid-template-columns: 1.3fr 1fr 1fr 0.9fr; gap: 8px; padding: 0 12px 5px; font-size: 10px; color: var(--tx3); font-weight: 600; }
+.cmp-empty { text-align: center; padding: 2.5rem 1rem; color: var(--tx3); font-size: 12px; }
+.cmp-empty-ic { font-size: 30px; opacity: .25; margin-bottom: 8px; }
+
+/* ── مؤشر صحة الشركة ── */
+.health-wrap { display: flex; gap: 1.2rem; align-items: center; background: var(--dk3); border-radius: 12px; padding: 1.1rem 1.3rem; margin-bottom: .9rem; flex-wrap: wrap; }
+.health-gauge { position: relative; width: 132px; height: 132px; flex-shrink: 0; }
+.health-num { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.health-score { font-size: 34px; font-weight: 800; line-height: 1; }
+.health-of { font-size: 10px; color: var(--tx3); margin-top: 3px; }
+.health-info { flex: 1; min-width: 180px; }
+.health-grade { font-size: 17px; font-weight: 700; margin-bottom: 3px; }
+.health-desc { font-size: 12px; color: var(--tx2); line-height: 1.7; }
+.health-bars { display: grid; gap: 7px; margin-top: .6rem; }
+.hb-row { display: grid; grid-template-columns: 90px 1fr 42px; gap: 9px; align-items: center; }
+.hb-lbl { font-size: 11px; color: var(--tx2); }
+.hb-track { height: 7px; background: var(--dk2); border-radius: 4px; overflow: hidden; }
+.hb-fill { height: 100%; border-radius: 4px; transition: width .5s; }
+.hb-val { font-size: 11px; font-weight: 700; text-align: left; }
+.hgreen { color: var(--gn); } .hamber { color: var(--am); } .hred { color: var(--rd); }
+.hbg-green { background: var(--gn); } .hbg-amber { background: var(--am); } .hbg-red { background: var(--rd); }
+
+/* ── الميزانية مقابل الفعلي ── */
+.bud-form { background: var(--dk3); border-radius: 10px; padding: 1rem 1.1rem; margin-bottom: .9rem; }
+.bud-form-t { font-size: 12px; color: var(--tx2); margin-bottom: .7rem; }
+.bud-inputs { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px,1fr)); gap: 9px; }
+.bud-field label { display: block; font-size: 10px; color: var(--tx3); margin-bottom: 3px; }
+.bud-field input { width: 100%; background: var(--dk2); border: 1px solid var(--bd); border-radius: 6px; padding: 7px 9px; font-size: 12px; color: var(--tx); font-family: var(--font); }
+.bud-field input:focus { outline: none; border-color: var(--bd-g); }
+.bud-btn { margin-top: .8rem; background: var(--gold); color: #1a1a1a; border: none; border-radius: 7px; padding: 8px 18px; font-size: 12px; font-weight: 700; cursor: pointer; font-family: var(--font); }
+.bud-row { display: grid; grid-template-columns: 1.1fr 1fr 1fr 1fr 0.85fr; gap: 8px; align-items: center; background: var(--dk3); border-radius: 8px; padding: 10px 12px; margin-bottom: 6px; border-right: 3px solid var(--tx3); }
+.bud-row.ok { border-right-color: var(--gn); }
+.bud-row.over { border-right-color: var(--rd); }
+.bud-row.near { border-right-color: var(--am); }
+.bud-head { display: grid; grid-template-columns: 1.1fr 1fr 1fr 1fr 0.85fr; gap: 8px; padding: 0 12px 5px; font-size: 10px; color: var(--tx3); font-weight: 600; }
+.bud-c { font-size: 12px; font-weight: 600; color: var(--tx); }
+.bud-c.muted { color: var(--tx3); }
+.bud-pct { font-size: 12px; font-weight: 700; text-align: left; }
+
+/* ── نقطة التعادل ── */
+.be-hero { background: var(--dk3); border-radius: 12px; padding: 1.2rem 1.3rem; margin-bottom: .9rem; text-align: center; }
+.be-hero-lbl { font-size: 11px; color: var(--tx3); margin-bottom: 4px; }
+.be-hero-val { font-size: 30px; font-weight: 800; color: var(--gold-l); }
+.be-hero-sub { font-size: 12px; margin-top: 6px; }
+.be-bar-wrap { margin: 1rem 0 .4rem; }
+.be-bar { height: 26px; background: var(--dk2); border-radius: 6px; position: relative; overflow: hidden; }
+.be-bar-fill { height: 100%; background: linear-gradient(90deg, var(--gn-d), var(--gn)); }
+.be-marker { position: absolute; top: -4px; bottom: -4px; width: 2px; background: var(--am); }
+.be-marker::after { content: 'التعادل'; position: absolute; top: -15px; right: -18px; font-size: 9px; color: var(--am); white-space: nowrap; }
+.be-bar-legend { display: flex; justify-content: space-between; font-size: 10px; color: var(--tx3); margin-top: 5px; }
+.be-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px,1fr)); gap: 8px; }
+.be-cell { background: var(--dk3); border-radius: 8px; padding: 11px 13px; }
+.be-cell-lbl { font-size: 10px; color: var(--tx3); margin-bottom: 3px; }
+.be-cell-val { font-size: 15px; font-weight: 700; color: var(--tx); }
+.be-note { font-size: 11px; color: var(--tx3); margin-top: .8rem; line-height: 1.7; background: var(--am-d); border:1px solid rgba(224,168,74,.25); border-radius:7px; padding:9px 11px; }
+
+#setupOv { position: fixed; inset: 0; background: rgba(0,0,0,.85); z-index: 200; display: none; align-items: center; justify-content: center; }
+.scard { background: var(--dk2); border: 1px solid var(--bd); border-radius: 14px; padding: 2rem; width: 440px; }
+.stit { font-size: 18px; font-weight: 600; text-align: center; margin-bottom: 4px; }
+.ssub { font-size: 12px; color: var(--tx2); text-align: center; margin-bottom: 1.5rem; line-height: 1.6; }
+.flbl { font-size: 11px; color: var(--tx2); margin-bottom: 5px; display: block; font-weight: 500; }
+.finput { width: 100%; background: var(--dk3); border: 1px solid var(--bd); border-radius: 8px; padding: 10px 12px; font-size: 13px; color: var(--tx); direction: ltr; text-align: left; }
+.finput:focus { outline: none; border-color: var(--bd-g); }
+.bsave { width: 100%; padding: 11px; background: linear-gradient(135deg,var(--gold),var(--gold-l)); border: none; border-radius: 8px; font-size: 14px; font-weight: 600; color: #0D0D0E; cursor: pointer; font-family: var(--font); margin-top: 1rem; }
+.hint { background: var(--dk3); border: 1px solid var(--bd); border-radius: 8px; padding: 10px 12px; font-size: 11px; color: var(--tx3); margin-top: .75rem; line-height: 1.7; }
+.hint a { color: var(--gold); text-decoration: none; }
+</style>
+</head>
+<body>
+
+<div id="setupOv">
+  <div class="scard">
+    <div style="font-size:32px;text-align:center;margin-bottom:12px">💚</div>
+    <div class="stit">مرحباً بك في صافي</div>
+    <div class="ssub" id="demoMessage">مديرك المالي الذكي — نسخة عرض تجريبية<br><span style="color:var(--am)">⚠️ هذه نسخة Demo — كل تحليل يستهلك من رصيد API الخاص بالمطوّر</span></div>
+    
+    <div id="demoSetupSection" style="display:none">
+      <label class="flbl">مفتاح Demo (للمطوّر فقط)</label>
+      <input type="password" class="finput" id="apiIn" placeholder="sk-ant-api03-...">
+      <div style="font-size:10px;color:var(--tx3);margin-top:6px;line-height:1.6">
+        هذا المفتاح يُخفى عن المستخدمين النهائيين. أدخله مرة واحدة لتفعيل وضع العرض.
+      </div>
+    </div>
+    
+    <div style="text-align:center;margin:16px 0 6px">
+      <button onclick="document.getElementById('demoSetupSection').style.display='block';this.style.display='none'" 
+              style="background:transparent;border:1px dashed var(--bd);color:var(--tx3);padding:6px 14px;border-radius:6px;font-size:10px;cursor:pointer;font-family:var(--font)">
+        🔑 أنا المطوّر — إعداد مفتاح Demo
+      </button>
+    </div>
+    
+    <label class="flbl" style="margin-top:14px">دولة التسجيل (للفحوصات الضريبية)</label>
+    <select class="finput" id="countryIn" style="direction:rtl;text-align:right">
+      <option value="sa">🇸🇦 السعودية</option>
+      <option value="ae">🇦🇪 الإمارات</option>
+      <option value="eg">🇪🇬 مصر</option>
+      <option value="kw">🇰🇼 الكويت</option>
+      <option value="qa">🇶🇦 قطر</option>
+      <option value="bh">🇧🇭 البحرين</option>
+      <option value="om">🇴🇲 عُمان</option>
+      <option value="jo">🇯🇴 الأردن</option>
+      <option value="ma">🇲🇦 المغرب</option>
+      <option value="us">🇺🇸 الولايات المتحدة</option>
+      <option value="uk">🇬🇧 المملكة المتحدة</option>
+      <option value="other">🌍 دولة أخرى</option>
+    </select>
+    <label class="flbl" style="margin-top:12px">لغة التحليل والتقارير / Report Language</label>
+    <select class="finput" id="langIn" style="direction:rtl;text-align:right">
+      <option value="ar">🇸🇦 العربية</option>
+      <option value="en">🇬🇧 English</option>
+    </select>
+    <button class="bsave" onclick="saveKey()">حفظ والمتابعة ←</button>
+    <div class="hint">
+      ١. افتح <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a><br>
+      ٢. Billing → Add Credits<br>
+      ٣. API Keys → Create Key → انسخ المفتاح
+    </div>
+  </div>
+</div>
+
+<div class="topbar">
+  <div class="logo">
+    <div class="logo-mark">ص</div>
+    <div>
+      <div class="logo-name">صافي</div>
+      <div class="logo-sub" data-t="subtitle">مديرك المالي الذكي</div>
+    </div>
+  </div>
+  <button class="api-pill" onclick="document.getElementById('setupOv').style.display='flex'">
+    <div class="dot" id="sdot"></div>
+    <span id="slbl" data-t="apiPill">إعداد API</span>
+  </button>
+</div>
+
+<div class="app">
+  <div class="sidebar">
+    <div class="sb-sec">
+      <div class="sb-lbl" data-t="filesLabel">الملفات</div>
+      <div class="drop" id="dropZ" onclick="document.getElementById('fi').click()">
+        <div class="drop-ic">⬆</div>
+        <div class="drop-t" data-t="dropTitle">ارفع ملفاتك هنا</div>
+        <div class="drop-s" data-t="dropSub">Excel · CSV · PDF · صور</div>
+        <input type="file" id="fi" multiple accept=".xlsx,.xls,.csv,.pdf,.png,.jpg,.jpeg,.txt" style="display:none">
+      </div>
+      <div class="flist" id="flist"></div>
+    </div>
+    <div class="sb-sec">
+      <div class="sb-lbl" data-t="quickLabel">تحليلات جاهزة</div>
+      <button class="qbtn" data-t="q_full" onclick="setQ('FULL')">📊 تقرير شامل كامل + PDF</button>
+      <button class="qbtn" data-t="q_pl" onclick="setQ('تحليل الربح والخسارة بالأرقام والنسب المثالية')">💰 الربح والخسارة</button>
+      <button class="qbtn" data-t="q_liq" onclick="setQ('تحليل السيولة وقدرة السداد مع المعايير')">⚖️ السيولة والسداد</button>
+      <button class="qbtn" data-t="q_branch" onclick="setQ('تحليل أداء الفروع والمنتجات وترتيبها')">🏪 الفروع والمنتجات</button>
+      <button class="qbtn" data-t="q_exp" onclick="setQ('تحليل المصروفات والتكاليف مع النسب المثالية')">📉 المصروفات</button>
+      <button class="qbtn" data-t="q_plan" onclick="setQ('خطة تنفيذية عملية بالخطوات لتحسين الأداء')">💡 الخطة التنفيذية</button>
+      <button class="qbtn" data-t="q_cash" onclick="setQ('تحليل التدفقات النقدية التشغيلية والاستثمارية')">💸 التدفقات النقدية</button>
+      <button class="qbtn" data-t="q_integ" onclick="setQ('افحص سلامة البيانات وتحقق من صحة القوائم المالية وطبّق قانون بنفورد لكشف أي شذوذ في الأرقام')">🛡️ فحص سلامة البيانات</button>
+      <button class="qbtn" data-t="q_comp" onclick="setQ('افحص مدى اكتمال القوائم المالية ومطابقتها للمعايير المحاسبية والمتطلبات الضريبية والزكوية حسب الدولة')">🌍 فحص المعايير المحاسبية</button>
+      <button class="qbtn" data-t="q_bank" onclick="setQ('طابق كشف الحساب البنكي مع دفتر النقدية واكشف المعاملات غير المتطابقة والفروقات')">🏦 المطابقة البنكية</button>
+    </div>
+    <div class="sb-sec">
+      <div class="sb-lbl" data-t="cfoLabel">أدوات المدير المالي</div>
+      <button class="qbtn" data-t="q_health" onclick="showHealth()">💚 مؤشر صحة الشركة</button>
+      <button class="qbtn" data-t="q_budget" onclick="showBudget()">🎯 الميزانية مقابل الفعلي</button>
+      <button class="qbtn" data-t="q_breakeven" onclick="showBreakeven()">⚖️ نقطة التعادل</button>
+      <button class="qbtn" data-t="q_compare" onclick="showCompare()">📅 مقارنة الفترات</button>
+    </div>
+    <div class="sb-sec" id="histSec" style="display:none">
+      <div class="sb-lbl" data-t="histLabel">التقارير السابقة</div>
+      <div id="histList"></div>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="pbar">
+      <textarea class="pinput" id="pinput" data-tph="promptPh" placeholder="اكتب سؤالك المالي... أو اختر من الأزرار" onkeydown="if(event.key==='Enter'&&(event.ctrlKey||event.metaKey))doAnalyze()"></textarea>
+      <button class="bsend" id="sbtn" data-t="analyzeBtn" onclick="doAnalyze()">تحليل ↗</button>
+    </div>
+    <div class="out" id="out">
+      <div class="welcome">
+        <div class="welcome-ic">📊</div>
+        <div class="welcome-t" data-t="welcomeTitle">ارفع ملفاتك وابدأ التحليل</div>
+        <div class="welcome-s" data-t="welcomeSub">Excel أو PDF أو صور — اختر تحليلاً أو اكتب سؤالك</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══ وضع Demo — مفتاح API مخفي للعرض فقط ═══
+var DEMO_MODE = true; // تغييرها لـ false للنسخة الإنتاجية
+var DEMO_KEY_STORAGE = 'safi_demo_key'; // مفتاح مخفي للعرض
+var KEY = '';
+
+if (DEMO_MODE) {
+  // في وضع Demo: نستخدم مفتاح محفوظ مسبقاً (مخفي عن المالك)
+  KEY = localStorage.getItem(DEMO_KEY_STORAGE) || '';
+} else {
+  // في الوضع الإنتاجي: المستخدم يدخل مفتاحه
+  KEY = localStorage.getItem('ls_k') || '';
+}
+
+var COUNTRY = localStorage.getItem('ls_country') || 'sa';
+var LANG = localStorage.getItem('ls_lang') || 'ar';
+var FILES = [];
+var HIST = [];
+var CUR = null;
+var CHARTS = [];
+
+// ── نظام ترجمة الواجهة ──
+var UI_TEXT = {
+  ar: {
+    appSub: 'صافي — مديرك المالي الذكي',
+    subtitle: 'مديرك المالي الذكي',
+    filesLabel: 'الملفات',
+    dropTitle: 'ارفع ملفاتك هنا',
+    dropSub: 'Excel · CSV · PDF · صور',
+    quickLabel: 'تحليلات جاهزة',
+    q_full: '📊 تقرير شامل كامل + PDF',
+    q_pl: '💰 الربح والخسارة',
+    q_liq: '⚖️ السيولة والسداد',
+    q_branch: '🏪 الفروع والمنتجات',
+    q_exp: '📉 المصروفات',
+    q_plan: '💡 الخطة التنفيذية',
+    q_cash: '💸 التدفقات النقدية',
+    q_integ: '🛡️ فحص سلامة البيانات',
+    q_comp: '🌍 فحص المعايير المحاسبية',
+    q_bank: '🏦 المطابقة البنكية',
+    cfoLabel: 'أدوات المدير المالي',
+    q_health: '💚 مؤشر صحة الشركة',
+    q_budget: '🎯 الميزانية مقابل الفعلي',
+    q_breakeven: '⚖️ نقطة التعادل',
+    q_compare: '📅 مقارنة الفترات',
+    histLabel: 'التقارير السابقة',
+    promptPh: 'اكتب سؤالك المالي... أو اختر من الأزرار',
+    analyzeBtn: 'تحليل ↗',
+    welcomeTitle: 'ارفع ملفاتك وابدأ التحليل',
+    welcomeSub: 'Excel أو PDF أو صور — اختر تحليلاً أو اكتب سؤالك',
+    setupTitle: 'إعداد المحلل المالي',
+    apiPill: 'إعداد API',
+    connected: 'متصل'
+  },
+  en: {
+    appSub: 'Smart Financial Analyzer',
+    filesLabel: 'Files',
+    dropTitle: 'Upload your files here',
+    dropSub: 'Excel · CSV · PDF · Images',
+    quickLabel: 'Quick Analysis',
+    q_full: '📊 Full Report + PDF',
+    q_pl: '💰 Profit & Loss',
+    q_liq: '⚖️ Liquidity & Solvency',
+    q_branch: '🏪 Branches & Products',
+    q_exp: '📉 Expenses',
+    q_plan: '💡 Action Plan',
+    q_cash: '💸 Cash Flow',
+    q_integ: '🛡️ Data Integrity Check',
+    q_comp: '🌍 Accounting Standards Check',
+    q_bank: '🏦 Bank Reconciliation',
+    cfoLabel: 'CFO Tools',
+    q_health: '💚 Company Health Score',
+    q_budget: '🎯 Budget vs Actual',
+    q_breakeven: '⚖️ Break-even Point',
+    q_compare: '📅 Compare Periods',
+    histLabel: 'Past Reports',
+    promptPh: 'Type your financial question... or pick a button',
+    analyzeBtn: 'Analyze ↗',
+    welcomeTitle: 'Upload your files to start',
+    welcomeSub: 'Excel, PDF or images — pick an analysis or type a question',
+    setupTitle: 'Financial Analyzer Setup',
+    apiPill: 'API Setup',
+    connected: 'Connected'
+  }
+};
+
+function t(key) {
+  var pack = UI_TEXT[LANG] || UI_TEXT.ar;
+  return pack[key] || (UI_TEXT.ar[key] || key);
+}
+
+// يطبّق اللغة على كل عناصر الواجهة
+function applyLang() {
+  var isEn = (LANG === 'en');
+  // اتجاه الصفحة
+  document.documentElement.setAttribute('dir', isEn ? 'ltr' : 'rtl');
+  document.documentElement.setAttribute('lang', isEn ? 'en' : 'ar');
+  // كل عنصر له data-t
+  var els = document.querySelectorAll('[data-t]');
+  for (var i = 0; i < els.length; i++) {
+    var key = els[i].getAttribute('data-t');
+    els[i].textContent = t(key);
+  }
+  // العناصر التي تحتاج placeholder
+  var ph = document.querySelectorAll('[data-tph]');
+  for (var p = 0; p < ph.length; p++) {
+    ph[p].setAttribute('placeholder', t(ph[p].getAttribute('data-tph')));
+  }
+}
+
+window.onload = function() {
+  // استرجاع الدولة المحفوظة
+  var sel = document.getElementById('countryIn');
+  if (sel) sel.value = COUNTRY;
+  var lsel = document.getElementById('langIn');
+  if (lsel) lsel.value = LANG;
+  applyLang();
+  // استرجاع التقارير السابقة
+  loadHistory();
+  renderHistory();
+  if (KEY && KEY.indexOf('sk-ant') === 0) {
+    setConn();
+  } else {
+    document.getElementById('setupOv').style.display = 'flex';
+  }
+};
+
+function saveKey() {
+  var k = document.getElementById('apiIn').value.trim();
+  
+  if (DEMO_MODE) {
+    // في وضع Demo: حفظ المفتاح في مكان خاص
+    if (k && k.indexOf('sk-ant') !== 0) { 
+      alert('المفتاح يجب أن يبدأ بـ sk-ant'); 
+      return; 
+    }
+    if (k) {
+      KEY = k;
+      localStorage.setItem(DEMO_KEY_STORAGE, k);
+    }
+  } else {
+    // الوضع الإنتاجي: التحقق الكامل
+    if (!k || k.indexOf('sk-ant') !== 0) { 
+      alert(LANG==='en'?'Key must start with sk-ant':'المفتاح يجب أن يبدأ بـ sk-ant'); 
+      return; 
+    }
+    KEY = k;
+    localStorage.setItem('ls_k', k);
+  }
+  
+  COUNTRY = document.getElementById('countryIn').value;
+  LANG = document.getElementById('langIn').value;
+  localStorage.setItem('ls_country', COUNTRY);
+  localStorage.setItem('ls_lang', LANG);
+  applyLang();
+  document.getElementById('setupOv').style.display = 'none';
+  setConn();
+}
+
+function setConn() {
+  document.getElementById('sdot').classList.add('on');
+  document.getElementById('slbl').textContent = 'متصل';
+}
+
+var dz = document.getElementById('dropZ');
+var fi = document.getElementById('fi');
+dz.addEventListener('dragover', function(e) { e.preventDefault(); dz.classList.add('drag'); });
+dz.addEventListener('dragleave', function() { dz.classList.remove('drag'); });
+dz.addEventListener('drop', function(e) { e.preventDefault(); dz.classList.remove('drag'); addFiles(e.dataTransfer.files); });
+fi.addEventListener('change', function(e) { addFiles(e.target.files); fi.value = ''; });
+
+var FICONS = { xlsx:'📗', xls:'📗', csv:'📋', pdf:'📕', png:'🖼', jpg:'🖼', jpeg:'🖼', txt:'📄' };
+function fext(n) { return n.split('.').pop().toLowerCase(); }
+function fsz(b) { return b > 1048576 ? (b/1048576).toFixed(1)+'M' : (b/1024).toFixed(0)+'K'; }
+
+function addFiles(list) {
+  for (var i = 0; i < list.length; i++) {
+    var f = list[i];
+    var dup = false;
+    for (var j = 0; j < FILES.length; j++) {
+      if (FILES[j].name === f.name && FILES[j].size === f.size) { dup = true; break; }
+    }
+    if (!dup) FILES.push(f);
+  }
+  renderFiles();
+}
+
+function removeFile(i) { FILES.splice(i, 1); renderFiles(); }
+function clearAllFiles() { FILES = []; renderFiles(); }
+
+function renderFiles() {
+  var el = document.getElementById('flist');
+  var html = '';
+  for (var i = 0; i < FILES.length; i++) {
+    var f = FILES[i];
+    var ic = FICONS[fext(f.name)] || '📄';
+    var nm = f.name.length > 22 ? f.name.substring(0,19)+'...' : f.name;
+    html += '<div class="fitem">';
+    html += '<span>' + ic + '</span>';
+    html += '<span class="fn" title="'+f.name+'">' + nm + '</span>';
+    html += '<span class="fsz">' + fsz(f.size) + '</span>';
+    html += '<span class="fdel" onclick="removeFile('+i+')">×</span>';
+    html += '</div>';
+  }
+  if (FILES.length > 1) {
+    html += '<div onclick="clearAllFiles()" style="text-align:center;padding:6px;' +
+      'font-size:11px;color:var(--tx3);cursor:pointer;border:1px dashed var(--bd);' +
+      'border-radius:5px;margin-top:4px">🗑 مسح كل الملفات (' + FILES.length + ')</div>';
+  }
+  el.innerHTML = html;
+}
+
+function setQ(q) {
+  if (q === 'FULL') {
+    document.getElementById('pinput').value = (LANG === 'en')
+      ? 'Comprehensive financial report: executive summary, revenue and profit, liquidity ratios vs benchmarks, branch performance, top products, expense structure, action plan.'
+      : 'تقرير مالي شامل: الملخص التنفيذي، الإيرادات والأرباح، نسب السيولة مقارنة بالمثالية، أداء الفروع، أعلى المنتجات، هيكل المصروفات، الخطة التنفيذية.';
+  } else {
+    document.getElementById('pinput').value = q;
+  }
+  document.getElementById('pinput').focus();
+}
+
+function setOut(html) { document.getElementById('out').innerHTML = html; }
+
+function markStep(i, cls) {
+  var el = document.getElementById('st' + i);
+  if (el) el.className = 'lstep ' + cls;
+}
+
+function showLoading() {
+  var steps = (LANG === 'en')
+    ? ['Reading files...', 'Preparing data...', 'Smart analysis...', 'Building report...']
+    : ['قراءة الملفات...', 'تجهيز البيانات...', 'تحليل ذكي للبيانات...', 'بناء التقرير...'];
+  var msg = (LANG === 'en') ? 'Analyzing...' : 'جاري التحليل...';
+  var sh = '';
+  for (var i = 0; i < steps.length; i++) {
+    sh += '<li class="lstep" id="st' + i + '"><span class="sdot"></span>' + steps[i] + '</li>';
+  }
+  setOut('<div class="lwrap"><div class="spin"></div><div class="lmsg">' + msg + '</div><ul class="lsteps">' + sh + '</ul></div>');
+}
+
+function toB64(f) {
+  return new Promise(function(res, rej) {
+    var r = new FileReader();
+    r.onload = function(e) { res(e.target.result.split(',')[1]); };
+    r.onerror = rej;
+    r.readAsDataURL(f);
+  });
+}
+
+function readTxt(f) {
+  return new Promise(function(res, rej) {
+    var r = new FileReader();
+    r.onload = function(e) { res(e.target.result); };
+    r.onerror = rej;
+    r.readAsText(f, 'UTF-8');
+  });
+}
+
+function readExcel(file) {
+  return new Promise(function(res, rej) {
+    var r = new FileReader();
+    r.onload = function(e) {
+      try {
+        var wb = XLSX.read(e.target.result, { type: 'array', cellDates: true });
+        var out = '';
+        for (var si = 0; si < wb.SheetNames.length; si++) {
+          var sn = wb.SheetNames[si];
+          var csv = XLSX.utils.sheet_to_csv(wb.Sheets[sn]);
+          if (csv.trim()) {
+            // Read much more - up to 60000 chars per sheet
+            out += '[' + sn + ']\n' + csv.substring(0, 60000) + '\n';
+          }
+        }
+        res(out || 'فارغ');
+      } catch(e1) {
+        var r2 = new FileReader();
+        r2.onload = function(te) {
+          try {
+            var doc = new DOMParser().parseFromString(te.target.result, 'text/html');
+            var txt = '';
+            var tables = doc.querySelectorAll('table');
+            for (var ti = 0; ti < tables.length; ti++) {
+              txt += '[جدول ' + (ti+1) + ']\n';
+              var rows = tables[ti].querySelectorAll('tr');
+              for (var ri = 0; ri < rows.length; ri++) {
+                var cells = rows[ri].querySelectorAll('td,th');
+                var row = [];
+                for (var ci = 0; ci < cells.length; ci++) row.push(cells[ci].textContent.trim());
+                if (row.some(function(c){return c;})) txt += row.join('\t') + '\n';
+              }
+            }
+            res(txt || te.target.result.substring(0, 60000));
+          } catch(e2) { rej(e1); }
+        };
+        r2.onerror = function() { rej(e1); };
+        r2.readAsText(file, 'UTF-8');
+      }
+    };
+    r.onerror = rej;
+    r.readAsArrayBuffer(file);
+  });
+}
+
+function readFile(file) {
+  var e = fext(file.name);
+  if (e === 'png' || e === 'jpg' || e === 'jpeg' || e === 'gif' || e === 'webp') {
+    return toB64(file).then(function(b64) {
+      return { type: 'image', source: { type: 'base64', media_type: file.type || 'image/png', data: b64 } };
+    });
+  }
+  if (e === 'pdf') {
+    return toB64(file).then(function(b64) {
+      return { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: b64 } };
+    });
+  }
+  if (e === 'xlsx' || e === 'xls') {
+    return readExcel(file).then(function(txt) {
+      var summary = '';
+      try { var agg = aggregateSalesTable(txt); if (agg) summary = agg; } catch(_) {}
+      return { type: 'text', text: '\n=== ' + file.name + ' ===\n' + txt + summary };
+    });
+  }
+  return readTxt(file).then(function(txt) {
+    var summary = '';
+    try { var agg = aggregateSalesTable(txt); if (agg) summary = agg; } catch(_) {}
+    return { type: 'text', text: '\n=== ' + file.name + ' ===\n' + txt.substring(0, 60000) + summary };
+  });
+}
+
+function callAPI(parts, question, sys, maxTok) {
+  var blocks = [];
+  var buf = 'البيانات المالية:\n\n';
+  for (var i = 0; i < parts.length; i++) {
+    var p = parts[i];
+    if (p.type === 'text') {
+      buf += p.text + '\n';
+    } else {
+      blocks.push({ type: 'text', text: buf });
+      buf = '';
+      blocks.push(p);
+    }
+  }
+  buf += '\n\n' + question;
+  blocks.push({ type: 'text', text: buf });
+
+  return fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': KEY,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true'
+    },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-6',
+      max_tokens: maxTok,
+      system: sys,
+      messages: [{ role: 'user', content: blocks }]
+    })
+  }).then(function(r) {
+    if (!r.ok) return r.json().then(function(e) { throw new Error(e.error ? e.error.message : 'HTTP ' + r.status); });
+    return r.json();
+  }).then(function(d) {
+    return (d.content || []).filter(function(b) { return b.type === 'text'; }).map(function(b) { return b.text; }).join('');
+  });
+}
+
+function cleanJSON(raw) {
+  if (!raw) return {};
+  var original = raw;
+  raw = raw.trim();
+  // Remove markdown code fences
+  raw = raw.replace(/^```json/i,'').replace(/^```/,'').replace(/```$/,'').trim();
+  // Extract JSON object
+  var s = raw.indexOf('{'), e = raw.lastIndexOf('}');
+  if (s >= 0 && e > s) raw = raw.substring(s, e+1);
+  // Attempt 1: direct parse
+  try { return JSON.parse(raw); } catch(_) {}
+  // Attempt 2: remove trailing commas + control chars
+  try {
+    var fixed = raw.replace(/,(\s*[}\]])/g,'$1').replace(/[\x00-\x08\x0b\x0c\x0e-\x1f]/g,' ');
+    return JSON.parse(fixed);
+  } catch(_) {}
+  // Attempt 3: fix newlines inside strings
+  try {
+    var fixed2 = raw.replace(/,(\s*[}\]])/g,'$1').replace(/[\x00-\x1f]/g,' ').replace(/\\([^"\\/bfnrtu])/g,'$1');
+    return JSON.parse(fixed2);
+  } catch(_) {}
+  // Failed - return object with raw text for debugging
+  return { _raw: original };
+}
+
+function nSt(s) {
+  if (!s) return 'good';
+  var l = s.toLowerCase();
+  if (l.indexOf('جيد')>=0||l.indexOf('ممتاز')>=0||l.indexOf('good')>=0) return 'good';
+  if (l.indexOf('تحسين')>=0||l.indexOf('سيء')>=0||l.indexOf('bad')>=0) return 'bad';
+  return 'warn';
+}
+function nIm(s) {
+  if (!s) return 'medium';
+  var l = s.toLowerCase();
+  if (l.indexOf('عالي')>=0||l.indexOf('high')>=0) return 'high';
+  if (l.indexOf('منخفض')>=0||l.indexOf('low')>=0) return 'low';
+  return 'medium';
+}
+
+function fmt(n) {
+  if (!n && n !== 0) return '—';
+  if (Math.abs(n) >= 1000000) return (n/1000000).toFixed(2) + 'M';
+  if (Math.abs(n) >= 1000) return (n/1000).toFixed(1) + 'K';
+  return Math.round(n).toLocaleString('ar-SA');
+}
+
+// ── PRE-AGGREGATION: compute product/branch totals from sales files ──
+function parseCSVText(text) {
+  var lines = text.split(/\r?\n/);
+  var rows = [];
+  for (var i = 0; i < lines.length; i++) {
+    var line = lines[i];
+    if (!line.trim()) continue;
+    // Simple CSV parse (handles quoted fields)
+    var cells = [];
+    var cur = '';
+    var inQ = false;
+    for (var c = 0; c < line.length; c++) {
+      var ch = line[c];
+      if (ch === '"') { inQ = !inQ; }
+      else if ((ch === ',' || ch === '\t') && !inQ) { cells.push(cur); cur = ''; }
+      else { cur += ch; }
+    }
+    cells.push(cur);
+    rows.push(cells);
+  }
+  return rows;
+}
+
+function num(v) {
+  if (v == null) return 0;
+  var s = String(v).replace(/,/g,'').replace(/[^\d.\-]/g,'').trim();
+  var n = parseFloat(s);
+  return isNaN(n) ? 0 : n;
+}
+
+function findCol(headers, keywords) {
+  // تطابق تام أولاً، ثم جزئي
+  for (var pass = 0; pass < 2; pass++) {
+    for (var i = 0; i < headers.length; i++) {
+      var h = String(headers[i]).trim().toLowerCase();
+      for (var k = 0; k < keywords.length; k++) {
+        var kw = keywords[k].toLowerCase();
+        if (pass === 0) { if (h === kw) return i; }
+        else { if (h.indexOf(kw) >= 0) return i; }
+      }
+    }
+  }
+  return -1;
+}
+
+// ════════════════════════════════════════════════════════════════
+// محرك التعرّف الذكي على الأعمدة — يمنع اختيار عمود خاطئ
+// يجمع بين: تطابق الاسم + فحص نوع البيانات الفعلي + التقييم بالنقاط
+// ════════════════════════════════════════════════════════════════
+
+// يفحص نوع بيانات عمود فعلياً (رقمي / نصي / تاريخ / معرّف)
+function detectColumnType(rows, colIdx, headerIdx) {
+  var numericCount = 0, textCount = 0, dateCount = 0, emptyCount = 0;
+  var idLikeCount = 0; // أرقام طويلة ثابتة (معرّفات)
+  var sampleSize = 0;
+  var sumDigits = 0;
+  for (var r = headerIdx + 1; r < Math.min(rows.length, headerIdx + 200); r++) {
+    if (!rows[r] || colIdx >= rows[r].length) continue;
+    var raw = String(rows[r][colIdx] || '').trim();
+    if (!raw) { emptyCount++; continue; }
+    sampleSize++;
+    // تاريخ؟
+    if (/\d{4}-\d{1,2}-\d{1,2}/.test(raw) || /\d{1,2}\/\d{1,2}\/\d{2,4}/.test(raw)) {
+      dateCount++;
+      continue;
+    }
+    // رقمي؟
+    var cleaned = raw.replace(/[,\s]/g, '');
+    var isNum = /^-?\d+\.?\d*$/.test(cleaned) || /^-?\d*\.\d+$/.test(cleaned);
+    if (isNum) {
+      numericCount++;
+      var digits = cleaned.replace(/[^0-9]/g, '').length;
+      sumDigits += digits;
+      // معرّف محتمل: رقم طويل صحيح بدون فاصلة عشرية
+      if (digits >= 6 && cleaned.indexOf('.') < 0) idLikeCount++;
+    } else {
+      textCount++;
+    }
+  }
+  if (sampleSize === 0) return { type: 'empty', confidence: 0 };
+  var numRatio = numericCount / sampleSize;
+  var dateRatio = dateCount / sampleSize;
+  var textRatio = textCount / sampleSize;
+  var avgDigits = numericCount > 0 ? sumDigits / numericCount : 0;
+
+  if (dateRatio > 0.7) return { type: 'date', confidence: dateRatio };
+  if (numRatio > 0.7) {
+    // رقمي: لكن هل هو معرّف أم مبلغ مالي؟
+    if (idLikeCount / numericCount > 0.6 && avgDigits >= 6) {
+      return { type: 'id', confidence: numRatio, avgDigits: avgDigits };
+    }
+    return { type: 'numeric', confidence: numRatio, avgDigits: avgDigits };
+  }
+  if (textRatio > 0.6) return { type: 'text', confidence: textRatio };
+  return { type: 'mixed', confidence: 0.5 };
+}
+
+// يختار أفضل عمود بنظام نقاط: الاسم + النوع الفعلي
+// purpose: 'amount' (مبلغ) | 'label' (اسم/نص) | 'category' (تصنيف)
+function smartFindColumn(rows, headerIdx, nameKeywords, purpose, negativeKeywords) {
+  if (headerIdx < 0 || headerIdx >= rows.length) return { index: -1, confidence: 0 };
+  var headers = rows[headerIdx];
+  var best = { index: -1, score: -1, confidence: 0, type: '' };
+
+  for (var c = 0; c < headers.length; c++) {
+    var hName = String(headers[c] || '').trim().toLowerCase();
+    if (!hName) continue;
+    var score = 0;
+
+    // 1) تطابق الاسم
+    var nameMatch = 0;
+    for (var k = 0; k < nameKeywords.length; k++) {
+      var kw = nameKeywords[k].toLowerCase();
+      if (hName === kw) { nameMatch = 100; break; }
+      else if (hName.indexOf(kw) >= 0) { nameMatch = Math.max(nameMatch, 60); }
+    }
+    score += nameMatch;
+
+    // 2) خصم لو الاسم فيه كلمة سلبية
+    if (negativeKeywords) {
+      for (var n = 0; n < negativeKeywords.length; n++) {
+        if (hName.indexOf(negativeKeywords[n].toLowerCase()) >= 0) score -= 80;
+      }
+    }
+
+    // 3) فحص نوع البيانات الفعلي
+    var colType = detectColumnType(rows, c, headerIdx);
+    if (purpose === 'amount') {
+      if (colType.type === 'numeric') score += 50;
+      else if (colType.type === 'id') score -= 100;   // معرّف ليس مبلغاً
+      else if (colType.type === 'date') score -= 100;
+      else if (colType.type === 'text') score -= 60;
+    } else if (purpose === 'label') {
+      if (colType.type === 'text') score += 50;
+      else if (colType.type === 'numeric') score -= 40;
+      else if (colType.type === 'id') score -= 30;
+    } else if (purpose === 'category') {
+      if (colType.type === 'text') score += 40;
+      else if (colType.type === 'numeric') score -= 30;
+    }
+
+    if (score > best.score) {
+      best = { index: c, score: score, confidence: colType.confidence, type: colType.type, nameMatch: nameMatch };
+    }
+  }
+
+  // عتبة الثقة: لا بد من تطابق اسم حقيقي (nameMatch > 0) + نقاط كافية
+  // هذا يمنع اختيار عمود رقمي عشوائي لمجرد أنه رقمي
+  if (best.nameMatch <= 0 || best.score < 40) {
+    return { index: -1, score: best.score, confidence: 0, type: best.type };
+  }
+  return best;
+}
+
+// Detects a sales-by-product table and returns aggregated summary text
+function aggregateSalesTable(text) {
+  var rows = parseCSVText(text);
+  if (rows.length < 2) return null;
+
+  // Find header row (contains product + sales keywords)
+  var headerIdx = -1;
+  for (var r = 0; r < Math.min(rows.length, 10); r++) {
+    var joined = rows[r].join(' ');
+    if ((joined.indexOf('المنتج') >= 0 || joined.indexOf('الصنف') >= 0) &&
+        (joined.indexOf('المبيعات') >= 0 || joined.indexOf('مبيعات') >= 0)) {
+      headerIdx = r;
+      break;
+    }
+  }
+  if (headerIdx < 0) return null;
+
+  var cProduct = smartFindColumn(rows, headerIdx,
+    ['المنتج','الصنف','اسم المنتج','product','item'], 'label',
+    ['كود','رقم','code','id']).index;
+  var cSales = smartFindColumn(rows, headerIdx,
+    ['إجمالي المبيعات','اجمالي المبيعات','المبيعات','sales'], 'amount',
+    ['كمية','نسبة','%','qty']).index;
+  var cProfit = smartFindColumn(rows, headerIdx,
+    ['الربح','صافي الربح','profit'], 'amount', ['نسبة','%','هامش']).index;
+  var cBranch = smartFindColumn(rows, headerIdx,
+    ['الفرع','فرع','branch'], 'category', ['كود','مرجع','code']).index;
+  var cQty = smartFindColumn(rows, headerIdx,
+    ['صافي الكمية','الكمية','qty'], 'amount', ['مبلغ','سعر']).index;
+
+  if (cProduct < 0 || cSales < 0) return null;
+
+  var products = {};
+  var branches = {};
+  var totalSales = 0, totalProfit = 0;
+
+  for (var i = headerIdx + 1; i < rows.length; i++) {
+    var row = rows[i];
+    if (!row[cProduct]) continue;
+    var pname = String(row[cProduct]).trim();
+    if (!pname) continue;
+    var sales = num(row[cSales]);
+    var profit = cProfit >= 0 ? num(row[cProfit]) : 0;
+    var qty = cQty >= 0 ? num(row[cQty]) : 0;
+
+    if (!products[pname]) products[pname] = { sales:0, profit:0, qty:0 };
+    products[pname].sales += sales;
+    products[pname].profit += profit;
+    products[pname].qty += qty;
+    totalSales += sales;
+    totalProfit += profit;
+
+    if (cBranch >= 0 && row[cBranch]) {
+      var bname = String(row[cBranch]).trim();
+      if (!branches[bname]) branches[bname] = { sales:0, profit:0 };
+      branches[bname].sales += sales;
+      branches[bname].profit += profit;
+    }
+  }
+
+  // Sort products by sales
+  var prodArr = [];
+  for (var pk in products) {
+    if (products.hasOwnProperty(pk)) {
+      prodArr.push({ name:pk, sales:products[pk].sales, profit:products[pk].profit, qty:products[pk].qty });
+    }
+  }
+  prodArr.sort(function(a,b){ return b.sales - a.sales; });
+
+  var brArr = [];
+  for (var bk in branches) {
+    if (branches.hasOwnProperty(bk)) {
+      brArr.push({ name:bk, sales:branches[bk].sales, profit:branches[bk].profit });
+    }
+  }
+  brArr.sort(function(a,b){ return b.sales - a.sales; });
+
+  // Build a clean summary
+  var out = '\n\n=== ملخص محسوب آلياً من ملف المبيعات (دقيق 100%) ===\n';
+  out += 'عدد المنتجات الفريدة: ' + prodArr.length + '\n';
+  out += 'إجمالي المبيعات: ' + Math.round(totalSales) + ' ر.س\n';
+  out += 'إجمالي الربح: ' + Math.round(totalProfit) + ' ر.س\n\n';
+
+  out += 'أعلى 15 منتج حسب إجمالي المبيعات (مجمّعة من كل الفروع):\n';
+  for (var t = 0; t < Math.min(15, prodArr.length); t++) {
+    var p = prodArr[t];
+    var mg = p.sales > 0 ? (p.profit/p.sales*100).toFixed(1) : '0';
+    out += (t+1) + '. ' + p.name + ' | مبيعات: ' + Math.round(p.sales) +
+           ' | ربح: ' + Math.round(p.profit) + ' | كمية: ' + Math.round(p.qty) +
+           ' | هامش: ' + mg + '%\n';
+  }
+
+  if (brArr.length) {
+    out += '\nالمبيعات حسب الفرع (مجمّعة):\n';
+    for (var b = 0; b < brArr.length; b++) {
+      out += brArr[b].name + ' | مبيعات: ' + Math.round(brArr[b].sales) +
+             ' | ربح: ' + Math.round(brArr[b].profit) + '\n';
+    }
+  }
+  out += '=== نهاية الملخص المحسوب آلياً ===\n';
+  return out;
+}
+
+// يُرجع بيانات منظمة (منتجات + فروع) من ملف المبيعات
+function aggregateSalesData(text) {
+  var rows = parseCSVText(text);
+  if (rows.length < 2) return null;
+  var headerIdx = -1;
+  for (var r = 0; r < Math.min(rows.length, 10); r++) {
+    var joined = rows[r].join(' ');
+    if ((joined.indexOf('المنتج') >= 0 || joined.indexOf('الصنف') >= 0) &&
+        (joined.indexOf('المبيعات') >= 0 || joined.indexOf('مبيعات') >= 0)) {
+      headerIdx = r; break;
+    }
+  }
+  if (headerIdx < 0) return null;
+
+  // ═══ التعرّف الذكي على الأعمدة (يمنع اختيار عمود خاطئ) ═══
+  var colProduct = smartFindColumn(rows, headerIdx,
+    ['المنتج','الصنف','اسم المنتج','اسم الصنف','product','item'], 'label',
+    ['كود','رقم','code','id','معرّف']);
+  var colSales = smartFindColumn(rows, headerIdx,
+    ['إجمالي المبيعات','اجمالي المبيعات','المبيعات','صافي المبيعات','sales','revenue'], 'amount',
+    ['كمية','عدد','نسبة','%','qty','count']);
+  var colProfit = smartFindColumn(rows, headerIdx,
+    ['الربح','صافي الربح','profit','مجمل الربح'], 'amount',
+    ['نسبة','%','هامش','margin']);
+  var colBranch = smartFindColumn(rows, headerIdx,
+    ['الفرع','فرع','branch','الموقع','المتجر'], 'category',
+    ['كود','مرجع','رقم','code']);
+  var colQty = smartFindColumn(rows, headerIdx,
+    ['صافي الكمية','الكمية','عدد','quantity','qty'], 'amount',
+    ['مبلغ','سعر','قيمة','amount']);
+
+  var cProduct = colProduct.index;
+  var cSales = colSales.index;
+  var cProfit = colProfit.index;
+  var cBranch = colBranch.index;
+  var cQty = colQty.index;
+
+  if (cProduct < 0 || cSales < 0) return null;
+
+  // معلومات الثقة في اكتشاف الأعمدة (للعرض للمستخدم)
+  var detectionInfo = {
+    product: { col: cProduct, header: cProduct>=0 ? String(rows[headerIdx][cProduct]) : '', conf: colProduct.confidence },
+    sales: { col: cSales, header: cSales>=0 ? String(rows[headerIdx][cSales]) : '', conf: colSales.confidence },
+    profit: { col: cProfit, header: cProfit>=0 ? String(rows[headerIdx][cProfit]) : '', conf: colProfit.confidence },
+    branch: { col: cBranch, header: cBranch>=0 ? String(rows[headerIdx][cBranch]) : '', conf: colBranch.confidence }
+  };
+
+  var products = {}, branches = {}, totalSales = 0, totalProfit = 0;
+  for (var i = headerIdx + 1; i < rows.length; i++) {
+    var row = rows[i];
+    if (!row[cProduct]) continue;
+    var pname = String(row[cProduct]).trim();
+    if (!pname) continue;
+    var sales = num(row[cSales]);
+    var profit = cProfit >= 0 ? num(row[cProfit]) : 0;
+    var qty = cQty >= 0 ? num(row[cQty]) : 0;
+    if (!products[pname]) products[pname] = { sales:0, profit:0, qty:0 };
+    products[pname].sales += sales;
+    products[pname].profit += profit;
+    products[pname].qty += qty;
+    totalSales += sales; totalProfit += profit;
+    if (cBranch >= 0 && row[cBranch]) {
+      var bname = String(row[cBranch]).trim();
+      if (!branches[bname]) branches[bname] = { sales:0, profit:0 };
+      branches[bname].sales += sales;
+      branches[bname].profit += profit;
+    }
+  }
+  var prodArr = [];
+  for (var pk in products) if (products.hasOwnProperty(pk)) {
+    var pp = products[pk];
+    prodArr.push({ name:pk, sales:Math.round(pp.sales), profit:Math.round(pp.profit),
+      qty:Math.round(pp.qty), margin: pp.sales>0 ? +(pp.profit/pp.sales*100).toFixed(1) : 0 });
+  }
+  prodArr.sort(function(a,b){ return b.sales - a.sales; });
+  var brArr = [];
+  for (var bk in branches) if (branches.hasOwnProperty(bk)) {
+    brArr.push({ name:bk, sales:Math.round(branches[bk].sales), profit:Math.round(branches[bk].profit) });
+  }
+  brArr.sort(function(a,b){ return b.sales - a.sales; });
+  return {
+    products: prodArr.slice(0, 10),
+    branches: brArr,
+    totalSales: Math.round(totalSales),
+    totalProfit: Math.round(totalProfit),
+    productCount: prodArr.length,
+    detection: detectionInfo
+  };
+}
+
+// ════════════════════════════════════════════════════════════════
+// المحرك المالي — كل النسب تُحسب بمعادلات ثابتة (ليست AI)
+// ════════════════════════════════════════════════════════════════
+
+// يبحث عن قيمة سطر في قائمة مالية حسب كلمات مفتاحية
+function findLineValue(rows, keywords) {
+  // محاولة 1: تطابق تام (الأدق)
+  for (var pass = 0; pass < 2; pass++) {
+    for (var i = 0; i < rows.length; i++) {
+      var row = rows[i];
+      for (var c = 0; c < Math.min(row.length, 3); c++) {
+        var label = String(row[c] || '').trim();
+        if (!label) continue;
+        var match = false;
+        for (var k = 0; k < keywords.length; k++) {
+          if (pass === 0) { if (label === keywords[k]) match = true; }
+          else { if (label.indexOf(keywords[k]) >= 0) match = true; }
+        }
+        if (match) {
+          for (var v = c + 1; v < row.length; v++) {
+            var n = num(row[v]);
+            if (n !== 0) return n;
+          }
+        }
+      }
+    }
+  }
+  return 0;
+}
+
+// يحلل قائمة الدخل ويستخرج البنود
+function parseIncomeStatement(text) {
+  var rows = parseCSVText(text);
+  if (rows.length < 3) return null;
+  var joined = text;
+  // التأكد أنها قائمة دخل
+  if (joined.indexOf('إجمالي دخل') < 0 && joined.indexOf('الربح الصافي') < 0 &&
+      joined.indexOf('مجمل الربح') < 0) return null;
+
+  var revenue = Math.abs(findLineValue(rows, ['إجمالي دخل','اجمالي دخل','إجمالي الدخل','إجمالي الإيرادات']));
+  var cogs = Math.abs(findLineValue(rows, ['إجمالي تكاليف المبيعات','اجمالي تكاليف المبيعات','إجمالي تكلفة المبيعات']));
+  var grossProfit = Math.abs(findLineValue(rows, ['مجمل الربح','إجمالي الربح']));
+  var opExpenses = Math.abs(findLineValue(rows, ['إجمالي المصروفات التشغيلية','اجمالي المصروفات التشغيلية']));
+  var netProfit = Math.abs(findLineValue(rows, ['الربح الصافي','صافي الربح']));
+  var operatingProfit = Math.abs(findLineValue(rows, ['الربح من الأعمال','الربح التشغيلي']));
+
+  if (revenue === 0 && grossProfit === 0 && netProfit === 0) return null;
+
+  // إكمال البنود الناقصة بالمعادلات
+  if (grossProfit === 0 && revenue > 0 && cogs > 0) grossProfit = revenue - cogs;
+  if (cogs === 0 && revenue > 0 && grossProfit > 0) cogs = revenue - grossProfit;
+  if (netProfit === 0 && grossProfit > 0 && opExpenses > 0) netProfit = grossProfit - opExpenses;
+
+  return {
+    revenue: revenue, cogs: cogs, grossProfit: grossProfit,
+    opExpenses: opExpenses, netProfit: netProfit, operatingProfit: operatingProfit
+  };
+}
+
+// يحلل قائمة المركز المالي
+function parseBalanceSheet(text) {
+  var rows = parseCSVText(text);
+  if (rows.length < 3) return null;
+  if (text.indexOf('إجمالي الأصول') < 0 && text.indexOf('حقوق الملكية') < 0) return null;
+
+  var totalAssets = Math.abs(findLineValue(rows, ['إجمالي الأصول','اجمالي الأصول']));
+  var currentAssets = Math.abs(findLineValue(rows, ['إجمالي الأصول المتداولة','اجمالي الأصول المتداولة']));
+  var fixedAssets = Math.abs(findLineValue(rows, ['إجمالي الأصول الثابتة','اجمالي الأصول الثابتة']));
+  var cash = Math.abs(findLineValue(rows, ['إجمالي النقد وما يعادله','اجمالي النقد','النقد وما يعادله']));
+  var inventory = Math.abs(findLineValue(rows, ['إدارة المخزون','المخزون','إجمالي المخزون']));
+  var receivables = Math.abs(findLineValue(rows, ['حسابات مستحقة القبض','الذمم المدينة','المدينون']));
+  var currentLiab = Math.abs(findLineValue(rows, ['إجمالي الإلتزامات المتداولة','اجمالي الالتزامات المتداولة','إجمالي الالتزامات المتداولة']));
+  var totalLiab = Math.abs(findLineValue(rows, ['إجمالي الإلتزامات','اجمالي الالتزامات','إجمالي الالتزامات']));
+  var equity = Math.abs(findLineValue(rows, ['إجمالي حقوق الملكية','اجمالي حقوق الملكية']));
+  var retained = Math.abs(findLineValue(rows, ['إجمالي الأرباح المحتجزة','الأرباح المحتجزة']));
+
+  if (totalAssets === 0 && equity === 0) return null;
+
+  return {
+    totalAssets: totalAssets, currentAssets: currentAssets, fixedAssets: fixedAssets,
+    cash: cash, inventory: inventory, receivables: receivables,
+    currentLiab: currentLiab, totalLiab: totalLiab, equity: equity, retained: retained
+  };
+}
+
+// ════════ المعادلات المالية المعيارية ════════
+// كل نسبة: { القيمة، الحد الأدنى المثالي، الحد الأقصى المثالي }
+function computeRatios(inc, bal) {
+  var R = [];
+
+  // higherIsBetter: لو true، تجاوز الحد الأقصى = ممتاز (مثل هوامش الربح)
+  //                 لو false، تجاوز الحد الأقصى = خطر (مثل نسبة الدين)
+  function pushRatio(label, value, idealMin, idealMax, unit, explain, higherIsBetter) {
+    var status = 'good';
+    if (higherIsBetter) {
+      // كل ما زاد كان أفضل: المشكلة فقط لو أقل من الحد الأدنى
+      if (value >= idealMin) status = 'good';
+      else if (value >= idealMin * 0.7) status = 'warn';
+      else status = 'bad';
+    } else if (idealMax === null) {
+      // حد أدنى فقط
+      if (value >= idealMin) status = 'good';
+      else if (value >= idealMin * 0.7) status = 'warn';
+      else status = 'bad';
+    } else {
+      // نطاق مثالي: أقل أو أكثر = مشكلة
+      if (value >= idealMin && value <= idealMax) status = 'good';
+      else if (value > idealMax) status = (value > idealMax * 1.6) ? 'bad' : 'warn';
+      else status = (value < idealMin * 0.6) ? 'bad' : 'warn';
+    }
+    var idealTxt = idealMax === null ? ('أكبر من ' + idealMin + unit) : (idealMin + '-' + idealMax + unit);
+    R.push({
+      label: label,
+      actual: (unit === '%' ? value.toFixed(1) : value.toFixed(2)) + unit,
+      actual_num: value,
+      ideal: idealTxt,
+      ideal_max: idealMax || idealMin * 2,
+      status: status,
+      note: explain
+    });
+  }
+
+  // ─── نسب الربحية (الأعلى أفضل) ───
+  if (inc && inc.revenue > 0) {
+    if (inc.grossProfit > 0)
+      pushRatio('هامش الربح الإجمالي', inc.grossProfit / inc.revenue * 100, 55, 75, '%',
+        'مجمل الربح ÷ الإيرادات — كفاءة الإنتاج والتسعير', true);
+    if (inc.netProfit > 0)
+      pushRatio('هامش صافي الربح', inc.netProfit / inc.revenue * 100, 12, 25, '%',
+        'صافي الربح ÷ الإيرادات — الربحية النهائية', true);
+    if (inc.cogs > 0)
+      pushRatio('نسبة تكلفة المبيعات', inc.cogs / inc.revenue * 100, 25, 45, '%',
+        'تكلفة المبيعات ÷ الإيرادات — النطاق الصحي للمخبوزات', false);
+    if (inc.opExpenses > 0)
+      pushRatio('نسبة المصروفات التشغيلية', inc.opExpenses / inc.revenue * 100, 15, 35, '%',
+        'المصروفات التشغيلية ÷ الإيرادات — التحكم في المصاريف', false);
+  }
+
+  // ─── نسب السيولة (نطاق مثالي) ───
+  if (bal && bal.currentLiab > 0) {
+    if (bal.currentAssets > 0)
+      pushRatio('نسبة التداول', bal.currentAssets / bal.currentLiab, 1.5, 3.0, 'x',
+        'الأصول المتداولة ÷ الالتزامات المتداولة — القدرة على السداد', false);
+    var quickAssets = bal.currentAssets - bal.inventory;
+    if (bal.currentAssets > 0)
+      pushRatio('نسبة السيولة السريعة', (quickAssets > 0 ? quickAssets : 0) / bal.currentLiab, 0.8, 2.5, 'x',
+        '(الأصول المتداولة - المخزون) ÷ الالتزامات — سيولة فورية', false);
+    if (bal.cash > 0)
+      pushRatio('نسبة النقد', bal.cash / bal.currentLiab, 0.2, 1.5, 'x',
+        'النقد ÷ الالتزامات المتداولة — التغطية النقدية المباشرة', false);
+  }
+
+  // ─── نسب الملاءة ───
+  if (bal && bal.totalAssets > 0) {
+    if (bal.totalLiab > 0)
+      pushRatio('نسبة الدين إلى الأصول', bal.totalLiab / bal.totalAssets * 100, 0, 60, '%',
+        'إجمالي الالتزامات ÷ إجمالي الأصول — كلما أقل كان أأمن', false);
+    if (inc && inc.netProfit > 0)
+      pushRatio('العائد على الأصول', inc.netProfit / bal.totalAssets * 100, 5, null, '%',
+        'صافي الربح ÷ إجمالي الأصول — كفاءة استخدام الأصول', true);
+  }
+
+  // ─── العائد على حقوق الملكية (الأعلى أفضل) ───
+  if (bal && bal.equity > 0 && inc && inc.netProfit > 0) {
+    pushRatio('العائد على حقوق الملكية', inc.netProfit / bal.equity * 100, 10, null, '%',
+      'صافي الربح ÷ حقوق الملكية — عائد المُلّاك', true);
+  }
+
+  return R;
+}
+
+// يبني المؤشرات الرئيسية بمعادلات
+function computeKPIs(inc, bal, salesAgg) {
+  var K = [];
+  if (inc) {
+    if (inc.revenue > 0) K.push({ label:'إجمالي الإيرادات', value: fmt(inc.revenue)+' ر.س', status:'good', note:'مجموع كل الإيرادات' });
+    if (inc.netProfit > 0) {
+      var nm = inc.revenue > 0 ? (inc.netProfit/inc.revenue*100) : 0;
+      K.push({ label:'صافي الربح', value: fmt(inc.netProfit)+' ر.س', status: nm>=15?'good':nm>=8?'warn':'bad', note:'هامش '+nm.toFixed(1)+'%' });
+    }
+    if (inc.grossProfit > 0) K.push({ label:'مجمل الربح', value: fmt(inc.grossProfit)+' ر.س', status:'good', note:'الإيرادات ناقص التكلفة' });
+  }
+  if (bal) {
+    if (bal.totalAssets > 0) K.push({ label:'إجمالي الأصول', value: fmt(bal.totalAssets)+' ر.س', status:'good', note:'كل أصول المنشأة' });
+    if (bal.cash > 0) {
+      var cashStatus = (bal.currentLiab>0 && bal.cash/bal.currentLiab<0.2)?'warn':'good';
+      K.push({ label:'النقد المتاح', value: fmt(bal.cash)+' ر.س', status: cashStatus, note:'السيولة النقدية' });
+    }
+    if (bal.equity > 0) K.push({ label:'حقوق الملكية', value: fmt(bal.equity)+' ر.س', status:'good', note:'صافي قيمة المنشأة' });
+  }
+  return K;
+}
+
+// يبني هيكل المصروفات من قائمة الدخل
+function computeExpenses(inc) {
+  var E = [];
+  if (!inc || inc.revenue <= 0) return E;
+  function addExp(label, amount, idealPct) {
+    if (amount <= 0) return;
+    var pct = amount / inc.revenue * 100;
+    var status = pct <= idealPct ? 'good' : pct <= idealPct*1.4 ? 'warn' : 'bad';
+    E.push({ label:label, actual:amount, actual_pct: +pct.toFixed(1), ideal_pct: idealPct, status:status });
+  }
+  addExp('تكلفة المبيعات', inc.cogs, 40);
+  addExp('المصروفات التشغيلية', inc.opExpenses, 25);
+  return E;
+}
+
+// ════════════════════════════════════════════════════════════════
+// محرك فحص سلامة البيانات — التحقق + قانون بنفورد
+// كل الفحوصات بمعادلات ثابتة
+// ════════════════════════════════════════════════════════════════
+
+// ─── قانون بنفورد: التوزيع الطبيعي المتوقع لأول رقم ───
+var BENFORD_EXPECTED = [0, 30.1, 17.6, 12.5, 9.7, 7.9, 6.7, 5.8, 5.1, 4.6];
+
+// أعمدة يجب تجاهلها في بنفورد (مرجعية وليست مالية)
+var BENFORD_SKIP_COLS = ['journal id','معرف القيد','مُعرف القيد','legacy','القديم',
+  'account code','رقم الحساب','date','التاريخ','code','معرّف','معرف',
+  'tax percent','نسبة الضريبة','tax rate','المعدل الضريبي',
+  'created','أنشئ','modified','تم التغيير','currency','العملة'];
+
+// أعمدة المبالغ المالية المفضّلة لبنفورد
+var BENFORD_AMOUNT_COLS = ['debit','مدين','credit','دائن','المبلغ','amount',
+  'إجمالي المبيعات','المبيعات','الربح','صافي','الرصيد','balance','التكلفة','القيمة'];
+
+// يستخرج الأرقام المالية الحقيقية فقط (يتجاهل الأعمدة المرجعية)
+function extractNumbers(text) {
+  var rows = parseCSVText(text);
+  if (rows.length < 2) return [];
+
+  // البحث عن صف العناوين
+  var headerRow = rows[0];
+  var amountColIdx = [];
+  var skipColIdx = {};
+
+  for (var c = 0; c < headerRow.length; c++) {
+    var h = String(headerRow[c] || '').toLowerCase();
+    var isSkip = false, isAmount = false;
+    for (var s = 0; s < BENFORD_SKIP_COLS.length; s++) {
+      if (h.indexOf(BENFORD_SKIP_COLS[s]) >= 0) { isSkip = true; break; }
+    }
+    for (var a = 0; a < BENFORD_AMOUNT_COLS.length; a++) {
+      if (h.indexOf(BENFORD_AMOUNT_COLS[a]) >= 0) { isAmount = true; break; }
+    }
+    if (isSkip) skipColIdx[c] = true;
+    if (isAmount && !isSkip) amountColIdx.push(c);
+  }
+
+  var nums = [];
+  // إذا وجدنا أعمدة مبالغ محددة، نستخرج منها فقط
+  if (amountColIdx.length > 0) {
+    for (var r = 1; r < rows.length; r++) {
+      for (var ci = 0; ci < amountColIdx.length; ci++) {
+        var v = Math.abs(num(rows[r][amountColIdx[ci]]));
+        if (v >= 1 && v < 100000000) nums.push(v);
+      }
+    }
+  } else {
+    // لا توجد أعمدة معروفة: نأخذ كل الأرقام ما عدا الأعمدة المرجعية
+    for (var r2 = 0; r2 < rows.length; r2++) {
+      for (var c2 = 0; c2 < rows[r2].length; c2++) {
+        if (skipColIdx[c2]) continue;
+        var v2 = Math.abs(num(rows[r2][c2]));
+        if (v2 >= 10 && v2 < 100000000) nums.push(v2);
+      }
+    }
+  }
+  return nums;
+}
+
+// تحليل بنفورد: يقارن توزيع أول رقم بالتوزيع المتوقع
+function benfordAnalysis(numbers) {
+  if (numbers.length < 50) {
+    return { valid: false, reason: 'عدد الأرقام غير كافٍ للتحليل (يلزم 50 على الأقل)', count: numbers.length };
+  }
+  var counts = [0,0,0,0,0,0,0,0,0,0];
+  var total = 0;
+  for (var i = 0; i < numbers.length; i++) {
+    var s = String(numbers[i]).replace(/[^0-9]/g, '');
+    if (!s.length) continue;
+    var first = parseInt(s.charAt(0), 10);
+    if (first >= 1 && first <= 9) { counts[first]++; total++; }
+  }
+  if (total === 0) return { valid: false, reason: 'لا توجد أرقام صالحة', count: 0 };
+
+  // حساب الانحراف لكل رقم + إحصائية كاي-تربيع
+  var rows = [];
+  var chiSquare = 0;
+  var maxDev = 0;
+  for (var d = 1; d <= 9; d++) {
+    var actualPct = counts[d] / total * 100;
+    var expectedPct = BENFORD_EXPECTED[d];
+    var dev = actualPct - expectedPct;
+    var expectedCount = expectedPct / 100 * total;
+    if (expectedCount > 0) {
+      chiSquare += Math.pow(counts[d] - expectedCount, 2) / expectedCount;
+    }
+    if (Math.abs(dev) > Math.abs(maxDev)) maxDev = dev;
+    rows.push({
+      digit: d,
+      actual: +actualPct.toFixed(1),
+      expected: expectedPct,
+      deviation: +dev.toFixed(1),
+      count: counts[d]
+    });
+  }
+
+  // MAD = متوسط الانحراف المطلق — المعيار المعتمد في تدقيق الحسابات (عتبات Nigrini)
+  // لا يتأثر بحجم العينة مثل كاي-تربيع
+  var madSum = 0;
+  for (var m = 0; m < rows.length; m++) {
+    madSum += Math.abs(rows[m].actual - rows[m].expected);
+  }
+  var MAD = madSum / 9;
+
+  // عتبات Nigrini المعتمدة عالمياً لتحليل أول رقم:
+  // أقل من 0.6  = مطابقة قريبة     | 0.6-1.2 = مقبول
+  // 1.2-1.5     = مطابقة هامشية     | أكبر من 1.5 = غير مطابق
+  var status, verdict;
+  if (MAD < 0.6) {
+    status = 'good';
+    verdict = 'توزيع الأرقام مطابق تماماً لقانون بنفورد — البيانات طبيعية ولا توجد إشارات شذوذ';
+  } else if (MAD < 1.2) {
+    status = 'good';
+    verdict = 'توزيع الأرقام مقبول ومتوافق مع قانون بنفورد — لا توجد مؤشرات تستدعي القلق';
+  } else if (MAD < 1.5) {
+    status = 'warn';
+    verdict = 'مطابقة هامشية لقانون بنفورد — يُنصح بمراجعة عينة من المعاملات للتأكد';
+  } else {
+    status = 'bad';
+    verdict = 'انحراف ملحوظ عن قانون بنفورد — يُنصح بمراجعة تدقيقية للبيانات (ليس دليل تلاعب بالضرورة)';
+  }
+
+  return {
+    valid: true,
+    rows: rows,
+    mad: +MAD.toFixed(3),
+    chiSquare: +chiSquare.toFixed(2),
+    status: status,
+    verdict: verdict,
+    count: total,
+    maxDeviation: +maxDev.toFixed(1)
+  };
+}
+
+// ─── فحوصات سلامة القوائم المالية ───
+function validateStatements(inc, bal) {
+  var checks = [];
+
+  function addCheck(name, passed, detail, severity) {
+    checks.push({
+      name: name,
+      status: passed ? 'good' : (severity === 'high' ? 'bad' : 'warn'),
+      detail: detail
+    });
+  }
+
+  // 1) معادلة الميزانية: الأصول = الالتزامات + حقوق الملكية
+  if (bal && bal.totalAssets > 0) {
+    var rightSide = bal.totalLiab + bal.equity;
+    var diff = Math.abs(bal.totalAssets - rightSide);
+    var diffPct = bal.totalAssets > 0 ? (diff / bal.totalAssets * 100) : 0;
+    addCheck(
+      'توازن الميزانية',
+      diffPct < 1,
+      diffPct < 1
+        ? 'الأصول تساوي الالتزامات + حقوق الملكية ✓'
+        : 'فرق ' + fmt(diff) + ' ر.س (' + diffPct.toFixed(1) + '%) — الأصول: ' + fmt(bal.totalAssets) + ' مقابل ' + fmt(rightSide),
+      'high'
+    );
+  }
+
+  // 2) قائمة الدخل: مجمل الربح = الإيرادات - تكلفة المبيعات
+  if (inc && inc.revenue > 0 && inc.cogs > 0 && inc.grossProfit > 0) {
+    var calcGP = inc.revenue - inc.cogs;
+    var gpDiff = Math.abs(calcGP - inc.grossProfit);
+    var gpPct = inc.revenue > 0 ? (gpDiff / inc.revenue * 100) : 0;
+    addCheck(
+      'صحة مجمل الربح',
+      gpPct < 2,
+      gpPct < 2
+        ? 'مجمل الربح يطابق (الإيرادات - التكلفة) ✓'
+        : 'فرق ' + fmt(gpDiff) + ' ر.س عن القيمة المحسوبة',
+      'high'
+    );
+  }
+
+  // 3) صافي الربح = مجمل الربح - المصروفات التشغيلية
+  if (inc && inc.grossProfit > 0 && inc.opExpenses > 0 && inc.netProfit > 0) {
+    var calcNP = inc.grossProfit - inc.opExpenses;
+    var npDiff = Math.abs(calcNP - inc.netProfit);
+    var npPct = inc.revenue > 0 ? (npDiff / inc.revenue * 100) : 0;
+    addCheck(
+      'صحة صافي الربح',
+      npPct < 3,
+      npPct < 3
+        ? 'صافي الربح متسق مع البنود ✓'
+        : 'فرق ' + fmt(npDiff) + ' ر.س — قد توجد بنود إيرادات/مصروفات أخرى',
+      'medium'
+    );
+  }
+
+  // 4) فحص منطقي: الإيرادات موجبة
+  if (inc) {
+    addCheck(
+      'منطقية الإيرادات',
+      inc.revenue > 0,
+      inc.revenue > 0 ? 'الإيرادات قيمة موجبة سليمة ✓' : 'الإيرادات صفر أو سالبة — تحقق من الملف',
+      'high'
+    );
+  }
+
+  // 5) فحص منطقي: المخزون لا يتجاوز الأصول المتداولة
+  if (bal && bal.inventory > 0 && bal.currentAssets > 0) {
+    addCheck(
+      'منطقية المخزون',
+      bal.inventory <= bal.currentAssets * 1.05,
+      bal.inventory <= bal.currentAssets * 1.05
+        ? 'المخزون ضمن الأصول المتداولة ✓'
+        : 'المخزون (' + fmt(bal.inventory) + ') يتجاوز الأصول المتداولة — تحقق من التصنيف',
+      'medium'
+    );
+  }
+
+  // 6) فحص: حقوق الملكية موجبة
+  if (bal && bal.equity !== 0) {
+    addCheck(
+      'سلامة حقوق الملكية',
+      bal.equity > 0,
+      bal.equity > 0
+        ? 'حقوق الملكية موجبة — المنشأة ملاءتها سليمة ✓'
+        : 'حقوق الملكية سالبة — مؤشر خطر مالي يستدعي الانتباه',
+      'high'
+    );
+  }
+
+  return checks;
+}
+
+// المحرك الكامل لفحص السلامة
+function runIntegrityChecks(fileTexts, inc, bal) {
+  // بنفورد يعمل بدقة على البيانات التفصيلية (دفتر الأستاذ، ميزان المراجعة، المبيعات)
+  // وليس القوائم الملخّصة. نختار أكبر ملف فيه أرقام كثيرة
+  var detailNumbers = [];
+  var allNumbers = [];
+  for (var i = 0; i < fileTexts.length; i++) {
+    var t = fileTexts[i];
+    if (!t) continue;
+    var nums = extractNumbers(t);
+    allNumbers = allNumbers.concat(nums);
+    // الملفات التفصيلية: أكثر من 150 رقم
+    if (nums.length > 150) {
+      detailNumbers = detailNumbers.concat(nums);
+    }
+  }
+  // نفضّل البيانات التفصيلية، وإلا نستخدم الكل
+  var benfordInput = detailNumbers.length >= 100 ? detailNumbers : allNumbers;
+  var benfordResult = benfordAnalysis(benfordInput);
+  benfordResult.dataSource = detailNumbers.length >= 100
+    ? 'بيانات تفصيلية (دفتر الأستاذ / ميزان المراجعة)'
+    : 'القوائم المالية الملخّصة';
+  if (detailNumbers.length < 100) {
+    benfordResult.note2 = 'ملاحظة: التحليل على قوائم ملخّصة قد يعطي إشارات أقل دقة. للحصول على نتيجة أدق ارفع دفتر الأستاذ العام.';
+  }
+  return {
+    statementChecks: validateStatements(inc, bal),
+    benford: benfordResult
+  };
+}
+
+// ════════════════════════════════════════════════════════════════
+// محرك الفحوصات الاسترشادية للمعايير حسب الدولة
+// فحوصات استرشادية فقط — ليست شهادة امتثال
+// ════════════════════════════════════════════════════════════════
+
+// بيانات المعايير لكل دولة
+var COUNTRY_RULES = {
+  sa: { name: 'السعودية', currency: 'ر.س', vat: 15, vatLabel: 'ضريبة القيمة المضافة',
+        zakat: true, authority: 'هيئة الزكاة والضريبة والجمارك (ZATCA)', standard: 'IFRS المعتمدة من SOCPA' },
+  ae: { name: 'الإمارات', currency: 'د.إ', vat: 5, vatLabel: 'ضريبة القيمة المضافة',
+        zakat: false, corporateTax: 9, authority: 'الهيئة الاتحادية للضرائب (FTA)', standard: 'IFRS' },
+  eg: { name: 'مصر', currency: 'ج.م', vat: 14, vatLabel: 'ضريبة القيمة المضافة',
+        zakat: false, authority: 'مصلحة الضرائب المصرية', standard: 'معايير المحاسبة المصرية (EAS)' },
+  kw: { name: 'الكويت', currency: 'د.ك', vat: 0, vatLabel: 'لا توجد ضريبة قيمة مضافة حالياً',
+        zakat: true, authority: 'وزارة المالية', standard: 'IFRS' },
+  qa: { name: 'قطر', currency: 'ر.ق', vat: 0, vatLabel: 'لا توجد ضريبة قيمة مضافة حالياً',
+        zakat: false, authority: 'الهيئة العامة للضرائب', standard: 'IFRS' },
+  bh: { name: 'البحرين', currency: 'د.ب', vat: 10, vatLabel: 'ضريبة القيمة المضافة',
+        zakat: false, authority: 'الجهاز الوطني للإيرادات', standard: 'IFRS' },
+  om: { name: 'عُمان', currency: 'ر.ع', vat: 5, vatLabel: 'ضريبة القيمة المضافة',
+        zakat: false, authority: 'جهاز الضرائب', standard: 'IFRS' },
+  jo: { name: 'الأردن', currency: 'د.أ', vat: 16, vatLabel: 'ضريبة المبيعات العامة',
+        zakat: false, authority: 'دائرة ضريبة الدخل والمبيعات', standard: 'IFRS' },
+  us: { name: 'الولايات المتحدة', currency: '$', vat: null, vatLabel: 'ضريبة المبيعات (حسب الولاية)',
+        zakat: false, corporateTax: 21, authority: 'IRS', standard: 'US GAAP' },
+  uk: { name: 'المملكة المتحدة', currency: '£', vat: 20, vatLabel: 'ضريبة القيمة المضافة (VAT)',
+        zakat: false, corporateTax: 25, authority: 'HMRC', standard: 'UK GAAP / IFRS' },
+  ma: { name: 'المغرب', currency: 'د.م', vat: 20, vatLabel: 'الضريبة على القيمة المضافة (TVA)',
+        zakat: false, corporateTax: 31, authority: 'المديرية العامة للضرائب', standard: 'CGNC المغربي' },
+  other: { name: 'دولة أخرى', currency: 'العملة المحلية', vat: null, vatLabel: 'الضريبة حسب الدولة',
+        zakat: false, authority: 'الجهة الضريبية المحلية', standard: 'IFRS' }
+};
+
+// يبحث عن وجود بند في نصوص الملفات
+function textHasAny(fileTexts, keywords) {
+  for (var i = 0; i < fileTexts.length; i++) {
+    if (!fileTexts[i]) continue;
+    for (var k = 0; k < keywords.length; k++) {
+      if (fileTexts[i].indexOf(keywords[k]) >= 0) return true;
+    }
+  }
+  return false;
+}
+
+// المحرك: فحوصات استرشادية للمعايير
+function runComplianceChecks(fileTexts, inc, bal, countryCode) {
+  var rules = COUNTRY_RULES[countryCode] || COUNTRY_RULES.other;
+  var checks = [];
+
+  function addCheck(name, status, detail) {
+    checks.push({ name: name, status: status, detail: detail });
+  }
+
+  // ─── 1) اكتمال القوائم المالية الأساسية (IFRS) ───
+  addCheck('قائمة الدخل',
+    inc ? 'good' : 'warn',
+    inc ? 'قائمة الدخل متوفرة ومقروءة ✓' : 'لم يتم العثور على قائمة دخل — معيار IAS 1 يتطلبها');
+
+  addCheck('قائمة المركز المالي',
+    bal ? 'good' : 'warn',
+    bal ? 'قائمة المركز المالي متوفرة ومقروءة ✓' : 'لم يتم العثور على قائمة مركز مالي — معيار IAS 1 يتطلبها');
+
+  var hasCashFlow = textHasAny(fileTexts, ['التدفقات النقدية','التدفق النقدي','الأنشطة التشغيلية','cash flow']);
+  addCheck('قائمة التدفقات النقدية',
+    hasCashFlow ? 'good' : 'warn',
+    hasCashFlow ? 'قائمة التدفقات النقدية متوفرة ✓' : 'يُنصح بإرفاق قائمة التدفقات النقدية — معيار IAS 7');
+
+  // ─── 2) فحوصات ضريبة القيمة المضافة ───
+  if (rules.vat && rules.vat > 0) {
+    var hasVAT = textHasAny(fileTexts, ['القيمة المضافة','ضريبة','VAT','الضريبة','الضرائب']);
+    addCheck(rules.vatLabel + ' (' + rules.vat + '%)',
+      hasVAT ? 'good' : 'warn',
+      hasVAT
+        ? 'تظهر بنود متعلقة بالضريبة في القوائم ✓'
+        : 'لم تظهر بنود ضريبة القيمة المضافة — تأكد من تسجيلها (' + rules.authority + ')');
+  } else if (rules.vat === 0) {
+    addCheck(rules.vatLabel, 'good',
+      'لا تُطبَّق ضريبة قيمة مضافة في ' + rules.name + ' حالياً');
+  }
+
+  // ─── 3) فحص الزكاة (للدول التي تطبّقها) ───
+  if (rules.zakat) {
+    var hasZakat = textHasAny(fileTexts, ['زكاة','الزكاة','zakat']);
+    addCheck('مخصص الزكاة',
+      hasZakat ? 'good' : 'warn',
+      hasZakat
+        ? 'يظهر بند متعلق بالزكاة ✓'
+        : 'لم يظهر مخصص للزكاة — المنشآت في ' + rules.name + ' قد تخضع للزكاة (' + rules.authority + ')');
+  }
+
+  // ─── 4) ضريبة دخل الشركات (الإمارات مثلاً) ───
+  if (rules.corporateTax) {
+    var hasCorpTax = textHasAny(fileTexts, ['ضريبة الدخل','ضريبة الشركات','corporate tax','income tax']);
+    addCheck('ضريبة دخل الشركات (' + rules.corporateTax + '%)',
+      hasCorpTax ? 'good' : 'warn',
+      hasCorpTax
+        ? 'يظهر بند ضريبة الدخل ✓'
+        : 'لم يظهر بند ضريبة دخل الشركات — تأكد من المعالجة (' + rules.authority + ')');
+  }
+
+  // ─── 5) فحص اكتمال بنود قائمة الدخل ───
+  if (inc) {
+    var incChecks = [
+      { has: inc.revenue > 0, label: 'الإيرادات' },
+      { has: inc.cogs > 0, label: 'تكلفة المبيعات' },
+      { has: inc.grossProfit > 0, label: 'مجمل الربح' },
+      { has: inc.netProfit !== 0, label: 'صافي الربح' }
+    ];
+    var missingInc = [];
+    for (var ic = 0; ic < incChecks.length; ic++) {
+      if (!incChecks[ic].has) missingInc.push(incChecks[ic].label);
+    }
+    addCheck('اكتمال بنود قائمة الدخل',
+      missingInc.length === 0 ? 'good' : 'warn',
+      missingInc.length === 0
+        ? 'جميع البنود الأساسية موجودة ✓'
+        : 'بنود قد تكون ناقصة أو غير واضحة: ' + missingInc.join('، '));
+  }
+
+  // ─── 6) فحص اكتمال بنود المركز المالي ───
+  if (bal) {
+    var balChecks = [
+      { has: bal.totalAssets > 0, label: 'إجمالي الأصول' },
+      { has: bal.currentAssets > 0, label: 'الأصول المتداولة' },
+      { has: bal.currentLiab > 0, label: 'الالتزامات المتداولة' },
+      { has: bal.equity !== 0, label: 'حقوق الملكية' }
+    ];
+    var missingBal = [];
+    for (var bc = 0; bc < balChecks.length; bc++) {
+      if (!balChecks[bc].has) missingBal.push(balChecks[bc].label);
+    }
+    addCheck('اكتمال بنود المركز المالي',
+      missingBal.length === 0 ? 'good' : 'warn',
+      missingBal.length === 0
+        ? 'جميع البنود الأساسية موجودة ✓'
+        : 'بنود قد تكون ناقصة أو غير واضحة: ' + missingBal.join('، '));
+  }
+
+  return {
+    country: rules,
+    checks: checks
+  };
+}
+
+// ════════════════════════════════════════════════════════════════
+// محرك المطابقة البنكية — يقارن كشف البنك بدفتر النقدية
+// كل المطابقات بمعادلات ثابتة
+// ════════════════════════════════════════════════════════════════
+
+// يحوّل تاريخاً بأي صيغة إلى رقم قابل للمقارنة (YYYYMMDD)
+function parseDate(raw) {
+  if (!raw) return 0;
+  var s = String(raw).trim();
+  // صيغة YYYY-MM-DD
+  var m = s.match(/(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if (m) return parseInt(m[1],10)*10000 + parseInt(m[2],10)*100 + parseInt(m[3],10);
+  // صيغة DD/MM/YYYY
+  m = s.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if (m) return parseInt(m[3],10)*10000 + parseInt(m[2],10)*100 + parseInt(m[1],10);
+  // صيغة DD-MM-YYYY
+  m = s.match(/(\d{1,2})-(\d{1,2})-(\d{4})/);
+  if (m) return parseInt(m[3],10)*10000 + parseInt(m[2],10)*100 + parseInt(m[1],10);
+  return 0;
+}
+
+// يحدد إن كان الملف كشف حساب بنكي أو دفتر نقدية
+function detectBankFile(text) {
+  var t = text.toLowerCase();
+  var bankSignals = 0, bookSignals = 0;
+  if (text.indexOf('كشف الحساب') >= 0 || text.indexOf('كشف حساب') >= 0) bankSignals += 3;
+  if (text.indexOf('رقم الحساب') >= 0) bankSignals += 2;
+  if (text.indexOf('الرصيد') >= 0 && (text.indexOf('مدين') >= 0 || text.indexOf('دائن') >= 0)) bankSignals += 2;
+  if (text.indexOf('التاريخ الهجري') >= 0) bankSignals += 2;
+  if (t.indexOf('statement') >= 0) bankSignals += 2;
+  if (text.indexOf('تصنيف لحساب') >= 0 || t.indexOf('classify to account') >= 0) bookSignals += 3;
+  if (text.indexOf('دفتر') >= 0 || text.indexOf('قيد') >= 0) bookSignals += 2;
+  return { isBank: bankSignals > bookSignals, bankScore: bankSignals, bookScore: bookSignals };
+}
+
+// يستخرج معاملات من ملف (كشف أو دفتر) بشكل موحّد
+function extractTransactions(text) {
+  var rows = parseCSVText(text);
+  if (rows.length < 2) return null;
+
+  // البحث عن صف العناوين (فيه كلمات مالية) — قاموس موسّع
+  var headerIdx = -1;
+  for (var r = 0; r < Math.min(rows.length, 30); r++) {
+    var joined = rows[r].join(' ').toLowerCase();
+    var hasDate = joined.indexOf('تاريخ') >= 0 || joined.indexOf('date') >= 0;
+    var hasAmount = joined.indexOf('مبلغ') >= 0 || joined.indexOf('مدين') >= 0 ||
+                    joined.indexOf('دائن') >= 0 || joined.indexOf('amount') >= 0 ||
+                    joined.indexOf('المجموع') >= 0 || joined.indexOf('سحب') >= 0 ||
+                    joined.indexOf('إيداع') >= 0 || joined.indexOf('ايداع') >= 0 ||
+                    joined.indexOf('debit') >= 0 || joined.indexOf('credit') >= 0 ||
+                    joined.indexOf('القيمة') >= 0 || joined.indexOf('withdrawal') >= 0 ||
+                    joined.indexOf('deposit') >= 0;
+    if (hasDate && hasAmount) { headerIdx = r; break; }
+  }
+  if (headerIdx < 0) return null;
+
+  // التعرّف على الأعمدة — قاموس مرادفات موسّع
+  var cDate = smartFindColumn(rows, headerIdx,
+    ['التاريخ الميلادي','تاريخ العملية','تاريخ الحركة','التاريخ','تاريخ','date',
+     'trans date','transaction date','value date','posting date'], 'category',
+    ['هجري','وقت','time','hijri']).index;
+  var cAmount = smartFindColumn(rows, headerIdx,
+    ['المبلغ','المجموع','القيمة','صافي المبلغ','amount','المبلغ الإجمالي','net amount','value'],
+    'amount', ['نسبة','%','رصيد','balance','معدل']).index;
+  var cDebit = smartFindColumn(rows, headerIdx,
+    ['مدين','المدين','سحب','مسحوبات','صادر','منصرف','debit','withdrawal','withdraw','debit amount','dr'],
+    'amount', ['نسبة','%']).index;
+  var cCredit = smartFindColumn(rows, headerIdx,
+    ['دائن','الدائن','إيداع','ايداع','إيداعات','ايداعات','وارد','مقبوضات','credit','deposit','credit amount','cr'],
+    'amount', ['نسبة','%']).index;
+  var cDesc = smartFindColumn(rows, headerIdx,
+    ['الوصف','التفاصيل','البيان','بيان','الشرح','شرح','ملاحظات','description','details','narration','memo','particulars'],
+    'label', []).index;
+  var cBalance = smartFindColumn(rows, headerIdx,
+    ['الرصيد','رصيد','balance','running balance'], 'amount', []).index;
+
+  // لا بد من تاريخ + (مبلغ موحّد أو مدين/دائن)
+  // إذا وُجد عمودا مدين ودائن منفصلان، نعتمدهما ونتجاهل عمود المبلغ الموحّد
+  // (لتفادي اختيار "مدين" بالخطأ كعمود مبلغ موحّد)
+  var hasDebitCredit = (cDebit >= 0 && cCredit >= 0);
+  var hasAmountCol = (cAmount >= 0) && !hasDebitCredit && (cAmount !== cDebit) && (cAmount !== cCredit);
+  if (cDate < 0 || (!hasAmountCol && !hasDebitCredit)) return null;
+
+  var txns = [];
+  var lastDate = 0;
+  for (var i = headerIdx + 1; i < rows.length; i++) {
+    var row = rows[i];
+    if (!row || !row.length) continue;
+
+    // التاريخ: لو فاضي، نرث تاريخ الصف السابق (شائع في كشوف البنوك)
+    var dateVal = parseDate(row[cDate]);
+    if (dateVal !== 0) lastDate = dateVal;
+    else dateVal = lastDate;
+
+    var amount = 0;
+    if (hasAmountCol) {
+      amount = num(row[cAmount]);
+    } else {
+      var deb = cDebit >= 0 ? num(row[cDebit]) : 0;
+      var cred = cCredit >= 0 ? num(row[cCredit]) : 0;
+      // دائن = وارد (موجب)، مدين = صادر (سالب)
+      amount = cred - deb;
+    }
+    // نتجاهل الصف فقط لو لا يوجد مبلغ إطلاقاً
+    if (amount === 0) continue;
+    // نتجاهل الصف لو لا يوجد تاريخ نهائياً (ولا حتى موروث)
+    if (dateVal === 0) continue;
+
+    txns.push({
+      date: dateVal,
+      amount: amount,
+      absAmount: Math.abs(amount),
+      desc: cDesc >= 0 ? String(row[cDesc] || '').trim() : '',
+      balance: cBalance >= 0 ? num(row[cBalance]) : null,
+      matched: false
+    });
+  }
+  return txns.length > 0 ? txns : null;
+}
+
+// المحرك الرئيسي للمطابقة البنكية
+function reconcileBank(fileTexts) {
+  // تحديد أي ملف هو الكشف وأيهما الدفتر
+  var bankText = null, bookText = null;
+  var candidates = [];
+  for (var i = 0; i < fileTexts.length; i++) {
+    if (!fileTexts[i]) continue;
+    var det = detectBankFile(fileTexts[i]);
+    var txns = extractTransactions(fileTexts[i]);
+    if (txns) candidates.push({ text: fileTexts[i], det: det, txns: txns });
+  }
+  if (candidates.length < 2) {
+    return { available: false, reason: 'المطابقة البنكية تحتاج ملفين: كشف الحساب البنكي + دفتر النقدية' };
+  }
+
+  // الأعلى bankScore = الكشف البنكي
+  candidates.sort(function(a,b){ return b.det.bankScore - a.det.bankScore; });
+  var bank = candidates[0];
+  var book = candidates[1];
+
+  var bankTxns = bank.txns;
+  var bookTxns = book.txns;
+
+  // ═══ المطابقة: لكل معاملة بنكية، ابحث عن مقابلها في الدفتر ═══
+  var matched = [];
+  for (var b = 0; b < bankTxns.length; b++) {
+    var bt = bankTxns[b];
+    for (var k = 0; k < bookTxns.length; k++) {
+      var kt = bookTxns[k];
+      if (kt.matched) continue;
+      // نفس المبلغ (تطابق تام بفارق قرش) + تاريخ ضمن 3 أيام
+      var amountMatch = Math.abs(bt.absAmount - kt.absAmount) < 0.02;
+      var dateDiff = Math.abs(bt.date - kt.date);
+      var dateMatch = dateDiff <= 3 || dateDiff >= 70; // 70+ = فرق شهر، نتساهل
+      if (amountMatch && dateMatch) {
+        bt.matched = true;
+        kt.matched = true;
+        matched.push({ bank: bt, book: kt });
+        break;
+      }
+    }
+  }
+
+  // المعاملات غير المتطابقة
+  var bankOnly = [];
+  for (var bo = 0; bo < bankTxns.length; bo++) {
+    if (!bankTxns[bo].matched) bankOnly.push(bankTxns[bo]);
+  }
+  var bookOnly = [];
+  for (var ko = 0; ko < bookTxns.length; ko++) {
+    if (!bookTxns[ko].matched) bookOnly.push(bookTxns[ko]);
+  }
+
+  // ═══ حساب الإجماليات ═══
+  function sumAbs(arr) {
+    var s = 0;
+    for (var x = 0; x < arr.length; x++) s += arr[x].absAmount;
+    return s;
+  }
+  var bankTotal = 0, bookTotal = 0;
+  for (var bt2 = 0; bt2 < bankTxns.length; bt2++) bankTotal += bankTxns[bt2].amount;
+  for (var kt2 = 0; kt2 < bookTxns.length; kt2++) bookTotal += bookTxns[kt2].amount;
+
+  var matchRate = bankTxns.length > 0
+    ? (matched.length / bankTxns.length * 100) : 0;
+
+  return {
+    available: true,
+    bankCount: bankTxns.length,
+    bookCount: bookTxns.length,
+    matchedCount: matched.length,
+    matchRate: +matchRate.toFixed(1),
+    bankOnly: bankOnly.slice(0, 30),
+    bookOnly: bookOnly.slice(0, 30),
+    bankOnlyCount: bankOnly.length,
+    bookOnlyCount: bookOnly.length,
+    bankOnlyTotal: Math.round(sumAbs(bankOnly)),
+    bookOnlyTotal: Math.round(sumAbs(bookOnly)),
+    bankNetTotal: Math.round(bankTotal),
+    bookNetTotal: Math.round(bookTotal),
+    difference: Math.round(bankTotal - bookTotal)
+  };
+}
+
+// المحرك الرئيسي: يحلل كل الملفات ويبني تقريراً كاملاً بالمعادلات
+// المحرك الرئيسي: يحلل كل الملفات ويبني تقريراً كاملاً بالمعادلات
+function computeFinancialReport(fileTexts) {
+  var inc = null, bal = null, salesAgg = null;
+  for (var i = 0; i < fileTexts.length; i++) {
+    var t = fileTexts[i];
+    if (!t) continue;
+    if (!inc) { var pi = parseIncomeStatement(t); if (pi) inc = pi; }
+    if (!bal) { var pb = parseBalanceSheet(t); if (pb) bal = pb; }
+  }
+  return {
+    income: inc,
+    balance: bal,
+    kpis: computeKPIs(inc, bal, salesAgg),
+    ratios: computeRatios(inc, bal),
+    expenses: computeExpenses(inc),
+    integrity: runIntegrityChecks(fileTexts, inc, bal),
+    compliance: runComplianceChecks(fileTexts, inc, bal, COUNTRY),
+    reconciliation: reconcileBank(fileTexts)
+  };
+}
+
+// ════════════════════════════════════════════════════════════════
+// محرك المدير المالي: استخراج المؤشرات + التنبيهات + المقارنة
+// ════════════════════════════════════════════════════════════════
+
+// يستخرج المؤشرات المالية الأساسية القابلة للمقارنة من نتيجة المحرك
+// كل مؤشر: { key, label, value, unit, dir }  حيث dir: up=الزيادة أفضل
+function extractMetrics(fin, sales) {
+  var M = {};
+  if (fin && fin.income) {
+    var inc = fin.income;
+    if (inc.revenue > 0)     M.revenue     = { label:'الإيرادات',       value:inc.revenue,     unit:' ر.س', dir:'up' };
+    if (inc.grossProfit > 0) M.grossProfit = { label:'مجمل الربح',      value:inc.grossProfit, unit:' ر.س', dir:'up' };
+    if (inc.netProfit > 0)   M.netProfit   = { label:'صافي الربح',      value:inc.netProfit,   unit:' ر.س', dir:'up' };
+    if (inc.revenue > 0 && inc.grossProfit > 0)
+      M.grossMargin = { label:'هامش الربح الإجمالي', value:+(inc.grossProfit/inc.revenue*100).toFixed(1), unit:'%', dir:'up' };
+    if (inc.revenue > 0 && inc.netProfit > 0)
+      M.netMargin   = { label:'هامش صافي الربح',    value:+(inc.netProfit/inc.revenue*100).toFixed(1),   unit:'%', dir:'up' };
+    if (inc.revenue > 0 && inc.opExpenses > 0)
+      M.opExpRatio  = { label:'نسبة المصروفات التشغيلية', value:+(inc.opExpenses/inc.revenue*100).toFixed(1), unit:'%', dir:'down' };
+  }
+  if (fin && fin.balance) {
+    var bal = fin.balance;
+    if (bal.cash > 0)        M.cash        = { label:'النقد المتاح',     value:bal.cash,        unit:' ر.س', dir:'up' };
+    if (bal.totalAssets > 0) M.totalAssets = { label:'إجمالي الأصول',    value:bal.totalAssets, unit:' ر.س', dir:'up' };
+    if (bal.equity > 0)      M.equity      = { label:'حقوق الملكية',     value:bal.equity,      unit:' ر.س', dir:'up' };
+    if (bal.currentLiab > 0 && bal.currentAssets > 0)
+      M.currentRatio = { label:'نسبة التداول', value:+(bal.currentAssets/bal.currentLiab).toFixed(2), unit:'x', dir:'up' };
+  }
+  if (sales && sales.products && sales.products.length) {
+    var totSales = 0;
+    for (var i = 0; i < sales.products.length; i++) totSales += (sales.products[i].sales || 0);
+    if (totSales > 0) M.productSales = { label:'إجمالي مبيعات المنتجات', value:totSales, unit:' ر.س', dir:'up' };
+  }
+  return M;
+}
+
+// يقارن مؤشرات تقرير جديد بأقدم تقرير سابق له نفس المؤشرات
+// يُرجع مصفوفة تنبيهات ذكية بأسلوب مدير مالي
+function buildAlerts(currentMetrics, prevEntry) {
+  if (!prevEntry || !prevEntry.metrics) return [];
+  var prev = prevEntry.metrics;
+  var alerts = [];
+  for (var key in currentMetrics) {
+    if (!currentMetrics.hasOwnProperty(key)) continue;
+    if (!prev[key]) continue;
+    var cur = currentMetrics[key];
+    var old = prev[key];
+    if (!old.value || old.value === 0) continue;
+    var change = (cur.value - old.value) / Math.abs(old.value) * 100;
+    if (Math.abs(change) < 3) continue; // تغيّر طفيف — نتجاهله
+    // هل التغيّر إيجابي أم سلبي؟ يعتمد على اتجاه المؤشر
+    var improved = (cur.dir === 'up') ? (change > 0) : (change < 0);
+    var magnitude = Math.abs(change);
+    var sev = magnitude >= 15 ? 'big' : 'small';
+    var arrow = change > 0 ? '▲' : '▼';
+    var changeTxt = (change > 0 ? '+' : '') + change.toFixed(1) + '%';
+    var spanCls = improved ? 'up' : 'down';
+    var msg, type, ic;
+    if (improved) {
+      type = 'alert-up'; ic = '✓';
+      msg = cur.label + ' تحسّن بنسبة <strong class="up">' + changeTxt + '</strong> ' +
+            'مقارنة بالفترة السابقة (' + fmtMetric(old) + ' ← ' + fmtMetric(cur) + ').';
+    } else {
+      type = (sev === 'big') ? 'alert-down' : 'alert-warn';
+      ic = (sev === 'big') ? '⚠' : '!';
+      msg = cur.label + ' تراجع بنسبة <strong class="down">' + changeTxt + '</strong> ' +
+            'مقارنة بالفترة السابقة (' + fmtMetric(old) + ' ← ' + fmtMetric(cur) + '). ' +
+            (sev === 'big' ? 'هذا تغيّر جوهري يستدعي مراجعة فورية.' : 'ننصح بمتابعة هذا البند.');
+    }
+    alerts.push({
+      type: type, ic: ic, improved: improved, magnitude: magnitude,
+      title: arrow + ' ' + cur.label, desc: msg
+    });
+  }
+  // الأهم أولاً: التراجعات الكبيرة، ثم التراجعات، ثم التحسّن
+  alerts.sort(function(a, b) {
+    if (a.improved !== b.improved) return a.improved ? 1 : -1;
+    return b.magnitude - a.magnitude;
+  });
+  return alerts.slice(0, 6);
+}
+
+// تنسيق قيمة مؤشر للعرض
+function fmtMetric(m) {
+  if (!m) return '—';
+  if (m.unit === '%' || m.unit === 'x') return m.value + m.unit;
+  return fmt(m.value) + (m.unit || '');
+}
+
+// يبحث عن أحدث تقرير سابق يحمل مؤشرات (لاستخدامه في التنبيهات)
+function findPreviousReport() {
+  for (var i = 0; i < HIST.length; i++) {
+    if (HIST[i].metrics && Object.keys(HIST[i].metrics).length > 0) return HIST[i];
+  }
+  return null;
+}
+
+function doAnalyze() {
+  var q = document.getElementById('pinput').value.trim();
+  if (!q && !FILES.length) { setOut('<div class="ecrd">⚠️ ارفع ملفاً أو اكتب سؤالاً</div>'); return; }
+  var question = q || 'تقرير مالي شامل';
+  document.getElementById('sbtn').disabled = true;
+  showLoading();
+
+  Promise.all(FILES.map(function(f) {
+    return readFile(f).catch(function() { return { type: 'text', text: '' }; });
+  })).then(function(parts) {
+    markStep(0, 'done'); markStep(1, 'act');
+
+    // ═══ المحرك المالي: حساب كل الأرقام بمعادلات ثابتة ═══
+    var fileTexts = [];
+    for (var i = 0; i < parts.length; i++) {
+      if (parts[i].type === 'text') fileTexts.push(parts[i].text);
+    }
+
+    // 1) القوائم المالية (الدخل + المركز المالي)
+    var fin = computeFinancialReport(fileTexts);
+
+    // 2) المبيعات (منتجات + فروع)
+    var salesData = null;
+    for (var s = 0; s < fileTexts.length; s++) {
+      var sd = aggregateSalesData(fileTexts[s]);
+      if (sd) { salesData = sd; break; }
+    }
+
+    // تخزين النتائج المحسوبة لتمريرها لاحقاً
+    window._engineResult = { fin: fin, sales: salesData };
+
+    markStep(1, 'done'); markStep(2, 'act');
+
+    // ═══ Claude يكتب التفسير والتوصيات فقط (ليس الأرقام) ═══
+    var ctx = 'الأرقام المالية المحسوبة بدقة:\n';
+    if (fin.income) {
+      ctx += 'الإيرادات: ' + Math.round(fin.income.revenue) + ' | ';
+      ctx += 'مجمل الربح: ' + Math.round(fin.income.grossProfit) + ' | ';
+      ctx += 'صافي الربح: ' + Math.round(fin.income.netProfit) + '\n';
+    }
+    if (fin.ratios && fin.ratios.length) {
+      ctx += 'النسب: ';
+      for (var rr = 0; rr < fin.ratios.length; rr++) {
+        ctx += fin.ratios[rr].label + '=' + fin.ratios[rr].actual + ' (' + fin.ratios[rr].status + ') ';
+      }
+      ctx += '\n';
+    }
+    if (salesData) {
+      ctx += 'أعلى المنتجات: ';
+      for (var pp = 0; pp < Math.min(5, salesData.products.length); pp++) {
+        ctx += salesData.products[pp].name + '(' + salesData.products[pp].sales + ') ';
+      }
+      ctx += '\nالفروع: ';
+      for (var bb = 0; bb < salesData.branches.length; bb++) {
+        ctx += salesData.branches[bb].name + '(' + salesData.branches[bb].sales + ') ';
+      }
+      ctx += '\n';
+    }
+
+    var langName = (LANG === 'en') ? 'English' : 'Arabic';
+    var SYS = 'You are a senior financial analyst. Respond with ONLY valid JSON. No markdown. All text values must be in ' + langName + ', under 120 characters per value. Maximum 6 items per array.';
+
+    var INS;
+    if (LANG === 'en') {
+      INS = ctx + '\n\nBased on these computed figures, write a professional analysis. Request: ' + question +
+        '\n\nRespond with JSON only (all text in English):\n' +
+        '{"ملخص":"3-sentence executive summary of financial position","فترة":"time period",' +
+        '"توصيات":[{"عنوان":"short title","وصف":"practical explanation with a figure from the data","أولوية":"high"}],' +
+        '"خطة":[{"رقم":1,"عنوان":"actionable step","تفاصيل":"implementation details","جدول":"immediate","مؤشر":"success metric"}],' +
+        '"ملاحظات":["important analytical note"]}';
+    } else {
+      INS = ctx + '\n\nبناءً على هذه الأرقام المحسوبة، اكتب تحليلاً احترافياً. الطلب: ' + question +
+        '\n\nأجب بـ JSON فقط:\n' +
+        '{"ملخص":"ملخص تنفيذي 3 جمل عن الوضع المالي","فترة":"الفترة الزمنية",' +
+        '"توصيات":[{"عنوان":"عنوان قصير","وصف":"شرح عملي مع رقم من البيانات","أولوية":"عالية"}],' +
+        '"خطة":[{"رقم":1,"عنوان":"خطوة عملية","تفاصيل":"تفاصيل التنفيذ","جدول":"فوري","مؤشر":"مؤشر النجاح"}],' +
+        '"ملاحظات":["ملاحظة تحليلية مهمة"]}';
+    }
+
+    return callAPI(parts, INS, SYS, 3000);
+  }).then(function(result) {
+    markStep(2, 'done'); markStep(3, 'act');
+
+    var eng = window._engineResult || { fin:{}, sales:null };
+    var p = cleanJSON(result);
+
+    // ═══ بناء التقرير: الأرقام من المحرك، التفسير من Claude ═══
+    var d = {
+      summary: p['\u0645\u0644\u062e\u0635'] || p.summary || '',
+      period:  p['\u0641\u062a\u0631\u0629']  || p.period  || new Date().toLocaleDateString('ar-SA'),
+      kpis: [],
+      benchmarks: [],
+      branches: [],
+      top_products: [],
+      expenses: [],
+      recommendations: [],
+      action_plan: [],
+      insights: [],
+      integrity: null,
+      compliance: null,
+      reconciliation: null
+    };
+
+    // المؤشرات — من المحرك
+    if (eng.fin && eng.fin.kpis) d.kpis = eng.fin.kpis;
+
+    // النسب — من المحرك (معادلات ثابتة)
+    if (eng.fin && eng.fin.ratios) d.benchmarks = eng.fin.ratios;
+
+    // المصروفات — من المحرك
+    if (eng.fin && eng.fin.expenses) d.expenses = eng.fin.expenses;
+
+    // فحص سلامة البيانات — من المحرك
+    if (eng.fin && eng.fin.integrity) d.integrity = eng.fin.integrity;
+
+    // الفحوصات الاسترشادية للمعايير — من المحرك
+    if (eng.fin && eng.fin.compliance) d.compliance = eng.fin.compliance;
+
+    // المطابقة البنكية — من المحرك
+    if (eng.fin && eng.fin.reconciliation) d.reconciliation = eng.fin.reconciliation;
+
+    // المنتجات والفروع — من المحرك
+    if (eng.sales) {
+      d.top_products = eng.sales.products;
+      d.branches = eng.sales.branches;
+      d.salesDetection = eng.sales.detection || null;
+    }
+
+    // التوصيات والخطة والملخص — من Claude
+    var recs = p['\u062a\u0648\u0635\u064a\u0627\u062a'] || p.recommendations || [];
+    d.recommendations = recs.map(function(r) {
+      return { title:r['\u0639\u0646\u0648\u0627\u0646']||r.title||'', desc:r['\u0648\u0635\u0641']||r.desc||'', impact:nIm(r['\u0623\u0648\u0644\u0648\u064a\u0629']||r.impact) };
+    });
+    var plan = p['\u062e\u0637\u0629'] || p.action_plan || [];
+    d.action_plan = plan.map(function(a,i) {
+      return { step:a['\u0631\u0642\u0645']||a.step||i+1, title:a['\u0639\u0646\u0648\u0627\u0646']||a.title||'', detail:a['\u062a\u0641\u0627\u0635\u064a\u0644']||a.detail||'', timeline:a['\u062c\u062f\u0648\u0644']||a.timeline||'', kpi:a['\u0645\u0624\u0634\u0631']||a.kpi||'' };
+    });
+    d.insights = p['\u0645\u0644\u0627\u062d\u0638\u0627\u062a'] || p.insights || [];
+
+    markStep(3, 'done');
+
+    var hasData = (d.kpis.length || d.benchmarks.length || d.branches.length ||
+                   d.top_products.length || d.expenses.length || d.recommendations.length ||
+                   d.action_plan.length || d.summary ||
+                   d.integrity || d.compliance ||
+                   (d.reconciliation && d.reconciliation.available));
+
+    if (!hasData) {
+      var raw = p._raw || result || '';
+      var safeRaw = raw.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      setOut('<div class="sec"><div class="stitle">⚠️ تعذّر استخراج بيانات</div>' +
+        '<p style="font-size:12px;color:var(--tx2);margin-bottom:10px;line-height:1.7">' +
+        'تأكد من رفع قائمة الدخل أو المركز المالي أو ملف المبيعات بصيغة صحيحة. النص المستلم:</p>' +
+        '<div style="background:var(--dk3);border-radius:8px;padding:14px;font-size:12px;' +
+        'color:var(--tx);line-height:1.8;white-space:pre-wrap;max-height:400px;overflow:auto">' +
+        safeRaw + '</div></div>');
+      return;
+    }
+
+    // ═══ المدير المالي: استخراج المؤشرات + بناء التنبيهات الذكية ═══
+    var curMetrics = extractMetrics(eng.fin, eng.sales);
+    var prevReport = findPreviousReport();
+    var alerts = buildAlerts(curMetrics, prevReport);
+    d.alerts = alerts;
+    d.comparedTo = (prevReport && alerts.length) ? (prevReport.date || prevReport.period || '') : '';
+
+    // حفظ البيانات المالية الخام (الدخل + الميزانية) لأدوات المدير المالي
+    var finRaw = null;
+    if (eng.fin && (eng.fin.income || eng.fin.balance)) {
+      finRaw = {
+        income: eng.fin.income || null,
+        balance: eng.fin.balance || null
+      };
+    }
+
+    var entry = {
+      q: (question).substring(0,65),
+      data: d,
+      metrics: curMetrics,
+      finRaw: finRaw,
+      time: new Date().toLocaleTimeString('ar-SA'),
+      date: new Date().toLocaleDateString('ar-SA'),
+      ts: Date.now(),
+      files: FILES.map(function(f){return f.name;})
+    };
+    HIST.unshift(entry);
+    if (HIST.length > 20) HIST.pop();
+    saveHistory();
+    CUR = entry;
+    renderHistory();
+    renderResult(entry);
+  }).catch(function(err) {
+    setOut('<div class="ecrd">❌ <strong>خطأ:</strong> ' + err.message + '</div>');
+  }).finally(function() {
+    document.getElementById('sbtn').disabled = false;
+  });
+}
+
+function destroyCharts() { CHARTS.forEach(function(c){try{c.destroy();}catch(_){}}); CHARTS=[]; }
+
+function renderResult(entry) {
+  destroyCharts();
+  var d = entry.data;
+  var tc = '#A8A49E', gc = 'rgba(255,255,255,.06)';
+  var clrs = ['#C9A84C','#4CAF7A','#4A8FE0','#E05A4A','#9B59B6'];
+
+  function sCls(s) { return s==='good'?'g':s==='bad'?'r':'a'; }
+  function sTxt(s) { return s==='good'?'<span class="g">✓ ممتاز</span>':s==='bad'?'<span class="r">✗ يحتاج تحسين</span>':'<span class="a">⚠ متوسط</span>'; }
+  function iClr(i) { return i==='high'?'var(--rd)':i==='low'?'var(--gn)':'var(--am)'; }
+  function iBg(i)  { return i==='high'?'var(--rd-d)':i==='low'?'var(--gn-d)':'var(--am-d)'; }
+  function iLbl(i) { return i==='high'?'أولوية عالية':i==='low'?'منخفضة':'متوسطة'; }
+
+  var kH=''; d.kpis.forEach(function(k){ var c=sCls(k.status); kH+='<div class="kcard '+c+'"><div class="klbl">'+k.label+'</div><div class="kval">'+k.value+'</div><div class="knote">'+k.note+'</div></div>'; });
+  var bmH=''; d.benchmarks.forEach(function(b){ var c=sCls(b.status),pct=b.actual_num&&b.ideal_max?Math.min(b.actual_num/b.ideal_max*100,100).toFixed(0):50; bmH+='<tr><td><strong>'+b.label+'</strong><br><small style="color:var(--tx3)">'+b.note+'</small></td><td><strong class="'+c+'">'+b.actual+'</strong></td><td style="color:var(--tx3)">'+b.ideal+'</td><td>'+sTxt(b.status)+'</td></tr>'; });
+  var mxS=1; d.branches.forEach(function(b){if((b.sales||0)>mxS)mxS=b.sales;});
+  var brH=''; d.branches.forEach(function(b,i){ var pct=((b.sales||0)/mxS*100).toFixed(1); brH+='<div class="bbar"><div class="btop"><span style="color:var(--tx2);font-weight:500">'+b.name+'</span><span>'+fmt(b.sales)+' ر.س</span></div><div class="btrk"><div class="bfil" style="width:'+pct+'%;background:'+clrs[i%5]+'"></div></div></div>'; });
+  var prH=''; d.top_products.forEach(function(p,i){ var mc=(p.margin>30)?'g':(p.margin>15)?'a':'r'; prH+='<tr><td style="color:var(--tx3);font-weight:600">'+(i+1)+'</td><td><strong>'+p.name+'</strong></td><td>'+fmt(p.sales)+' ر.س</td><td class="g">'+fmt(p.profit||0)+' ر.س</td><td class="'+mc+'">'+(p.margin?p.margin.toFixed(1)+'%':'—')+'</td></tr>'; });
+  var exH=''; d.expenses.forEach(function(e){ var c=sCls(e.status),st=e.status==='good'?'<span class="g">✓ جيد</span>':e.status==='bad'?'<span class="r">✗ مرتفع</span>':'<span class="a">⚠ مراقبة</span>'; exH+='<tr><td><strong>'+e.label+'</strong></td><td>'+fmt(e.actual)+' ر.س</td><td class="'+c+'">'+(e.actual_pct||0)+'%</td><td style="color:var(--tx3)">'+(e.ideal_pct||0)+'%</td><td>'+st+'</td></tr>'; });
+  var rcH=''; d.recommendations.forEach(function(r){ var clr=iClr(r.impact),bg=iBg(r.impact),lbl=iLbl(r.impact); rcH+='<div class="rcard"><div class="rpri" style="background:'+clr+'"></div><div><div class="rtitle"><span class="rbdg" style="background:'+bg+';color:'+clr+'">'+lbl+'</span>'+r.title+'</div><div class="rdesc">'+r.desc+'</div></div></div>'; });
+  var acH=''; d.action_plan.forEach(function(a){ var tg=''; if(a.timeline)tg+='<span class="atag ttime">⏱ '+a.timeline+'</span>'; if(a.kpi)tg+='<span class="atag tkpi">📈 '+a.kpi+'</span>'; acH+='<div class="acard"><div class="anum">'+a.step+'</div><div><div class="atitle">'+a.title+'</div><div class="adetail">'+a.detail+'</div><div class="atags">'+tg+'</div></div></div>'; });
+  var inH=''; if((d.insights||[]).length){ inH='<div class="sec"><div class="stitle">🔍 ملاحظات</div><ul style="padding-right:1.2rem;font-size:12px;color:var(--tx2);line-height:2">'; d.insights.forEach(function(i){inH+='<li>'+i+'</li>';}); inH+='</ul></div>'; }
+
+  // ─── قسم: التنبيهات الذكية (مقارنة بالفترة السابقة) ───
+  var alertH = '';
+  if (d.alerts && d.alerts.length) {
+    alertH = '<div class="sec"><div class="stitle">🔔 تنبيهات المدير المالي'
+      + (d.comparedTo ? ' <span style="font-weight:400;color:var(--tx3);font-size:10px">— مقارنةً بتقرير ' + d.comparedTo + '</span>' : '')
+      + '</div><div class="alerts">';
+    d.alerts.forEach(function(a) {
+      alertH += '<div class="alert ' + a.type + '">'
+        + '<span class="alert-ic">' + a.ic + '</span>'
+        + '<div><div class="alert-t">' + a.title + '</div>'
+        + '<div class="alert-d">' + a.desc + '</div></div></div>';
+    });
+    alertH += '</div></div>';
+  }
+
+  var cInner=''; if(d.branches.length)cInner+='<div class="cbox"><div class="ctitle">المبيعات حسب الفرع</div><canvas id="cB"></canvas></div>'; if(d.expenses.length)cInner+='<div class="cbox"><div class="ctitle">الفعلي% مقابل المثالي%</div><canvas id="cE"></canvas></div>'; if(d.top_products.length)cInner+='<div class="cbox"><div class="ctitle">أعلى المنتجات</div><canvas id="cP"></canvas></div>'; if(d.benchmarks.length)cInner+='<div class="cbox"><div class="ctitle">تقييم النسب</div><canvas id="cM"></canvas></div>';
+
+  // ─── بناء قسم فحص سلامة البيانات ───
+  var integH = '';
+  if (d.integrity) {
+    var iv = d.integrity;
+    // فحوصات القوائم
+    var checksH = '';
+    if (iv.statementChecks && iv.statementChecks.length) {
+      for (var ck = 0; ck < iv.statementChecks.length; ck++) {
+        var chk = iv.statementChecks[ck];
+        var icon = chk.status === 'good' ? '✓' : chk.status === 'bad' ? '✗' : '⚠';
+        var cls = chk.status === 'good' ? 'g' : chk.status === 'bad' ? 'r' : 'a';
+        checksH += '<tr><td><strong>' + chk.name + '</strong></td>' +
+          '<td class="' + cls + '" style="text-align:center;font-size:14px">' + icon + '</td>' +
+          '<td style="font-size:11px;color:var(--tx2)">' + chk.detail + '</td></tr>';
+      }
+    }
+    // بنفورد
+    var benfH = '';
+    if (iv.benford && iv.benford.valid) {
+      var bf = iv.benford;
+      var bfCls = bf.status === 'good' ? 'g' : bf.status === 'bad' ? 'r' : 'a';
+      var bfIcon = bf.status === 'good' ? '✓' : bf.status === 'bad' ? '✗' : '⚠';
+      benfH += '<div style="background:var(--dk3);border-radius:8px;padding:12px;margin-top:10px">';
+      benfH += '<div style="font-size:12px;font-weight:600;margin-bottom:6px"><span class="' + bfCls + '">' + bfIcon + ' قانون بنفورد</span> — كشف الشذوذ في الأرقام</div>';
+      benfH += '<div style="font-size:11px;color:var(--tx2);line-height:1.6;margin-bottom:8px">' + bf.verdict + '</div>';
+      benfH += '<div style="font-size:10px;color:var(--tx3)">المصدر: ' + bf.dataSource + ' · عدد الأرقام المحللة: ' + bf.count + ' · مؤشر MAD: ' + bf.mad + '</div>';
+      if (bf.note2) benfH += '<div style="font-size:10px;color:var(--am);margin-top:4px">' + bf.note2 + '</div>';
+      // جدول التوزيع
+      benfH += '<table class="dtable" style="margin-top:8px"><thead><tr><th>الرقم الأول</th><th>الفعلي %</th><th>المتوقع %</th><th>الانحراف</th></tr></thead><tbody>';
+      for (var bi = 0; bi < bf.rows.length; bi++) {
+        var br = bf.rows[bi];
+        var devCls = Math.abs(br.deviation) > 5 ? 'r' : Math.abs(br.deviation) > 2.5 ? 'a' : 'g';
+        benfH += '<tr><td style="text-align:center;font-weight:600">' + br.digit + '</td>' +
+          '<td style="text-align:center">' + br.actual + '%</td>' +
+          '<td style="text-align:center;color:var(--tx3)">' + br.expected + '%</td>' +
+          '<td style="text-align:center" class="' + devCls + '">' + (br.deviation > 0 ? '+' : '') + br.deviation + '%</td></tr>';
+      }
+      benfH += '</tbody></table>';
+      benfH += '</div>';
+    } else if (iv.benford) {
+      benfH += '<div style="font-size:11px;color:var(--tx3);margin-top:8px">قانون بنفورد: ' + (iv.benford.reason || 'غير متاح') + '</div>';
+    }
+
+    if (checksH || benfH) {
+      integH = '<div class="sec"><div class="stitle">🛡️ فحص سلامة البيانات والتحقق من الصحة</div>';
+      if (checksH) {
+        integH += '<table class="dtable"><thead><tr><th>الفحص</th><th style="width:50px;text-align:center">النتيجة</th><th>التفاصيل</th></tr></thead><tbody>' + checksH + '</tbody></table>';
+      }
+      integH += benfH;
+      integH += '<div style="font-size:10px;color:var(--tx3);margin-top:8px;line-height:1.6">⚖️ ملاحظة: هذه فحوصات استرشادية آلية للمساعدة في اكتشاف أخطاء الإدخال. لا تُعد بديلاً عن التدقيق المحاسبي المعتمد.</div>';
+      integH += '</div>';
+    }
+  }
+
+  // ─── قسم: الأعمدة التي تعرّفت عليها الأداة (شفافية) ───
+  var detectH = '';
+  if (d.salesDetection) {
+    var dt = d.salesDetection;
+    var detRows = '';
+    function detRow(label, info) {
+      if (!info || !info.header) return '';
+      return '<tr><td><strong>' + label + '</strong></td>' +
+        '<td style="color:var(--gn)">' + info.header + '</td></tr>';
+    }
+    detRows += detRow('عمود المنتج', dt.product);
+    detRows += detRow('عمود المبيعات', dt.sales);
+    detRows += detRow('عمود الربح', dt.profit);
+    detRows += detRow('عمود الفرع', dt.branch);
+    if (detRows) {
+      detectH = '<div class="sec"><div class="stitle">🎯 الأعمدة التي تعرّفت عليها الأداة</div>' +
+        '<p style="font-size:11px;color:var(--tx2);margin-bottom:8px;line-height:1.6">' +
+        'لضمان الدقة، اختارت الأداة هذه الأعمدة تلقائياً من ملف المبيعات بعد فحص نوع البيانات:</p>' +
+        '<table class="dtable"><thead><tr><th>الحقل</th><th>العمود المُختار في ملفك</th></tr></thead><tbody>' +
+        detRows + '</tbody></table>' +
+        '<div style="font-size:10px;color:var(--tx3);margin-top:6px">إذا كان أي عمود غير صحيح، تأكد من وضوح عناوين الأعمدة في ملفك.</div></div>';
+    }
+  }
+  integH += detectH;
+
+  // ─── قسم: الفحوصات الاسترشادية للمعايير المحاسبية ───
+  var compH = '';
+  if (d.compliance && d.compliance.checks && d.compliance.checks.length) {
+    var cmp = d.compliance;
+    var cn = cmp.country;
+    var goodCount = 0, warnCount = 0;
+    var compRows = '';
+    for (var cc = 0; cc < cmp.checks.length; cc++) {
+      var chk = cmp.checks[cc];
+      if (chk.status === 'good') goodCount++; else warnCount++;
+      var icon = chk.status === 'good' ? '✓' : '⚠';
+      var cls = chk.status === 'good' ? 'g' : 'a';
+      compRows += '<tr><td><strong>' + chk.name + '</strong></td>' +
+        '<td class="' + cls + '" style="text-align:center;font-size:14px">' + icon + '</td>' +
+        '<td style="font-size:11px;color:var(--tx2)">' + chk.detail + '</td></tr>';
+    }
+    compH = '<div class="sec"><div class="stitle">🌍 الفحوصات الاسترشادية للمعايير المحاسبية</div>';
+    // معلومات الدولة
+    compH += '<div style="background:var(--dk3);border-radius:8px;padding:10px 12px;margin-bottom:10px;font-size:11px;color:var(--tx2);line-height:1.8">';
+    compH += '<strong style="color:var(--gold-l)">الدولة:</strong> ' + cn.name + ' &nbsp;·&nbsp; ';
+    compH += '<strong style="color:var(--gold-l)">المعيار:</strong> ' + cn.standard + '<br>';
+    compH += '<strong style="color:var(--gold-l)">الجهة:</strong> ' + cn.authority;
+    compH += '</div>';
+    // ملخص
+    compH += '<div style="font-size:11px;color:var(--tx2);margin-bottom:8px">' +
+      'اجتاز ' + goodCount + ' من ' + cmp.checks.length + ' فحص' +
+      (warnCount > 0 ? ' · ' + warnCount + ' بند يحتاج انتباه' : ' · كل البنود سليمة ✓') + '</div>';
+    compH += '<table class="dtable"><thead><tr><th>الفحص</th><th style="width:50px;text-align:center">النتيجة</th><th>التفاصيل</th></tr></thead><tbody>' + compRows + '</tbody></table>';
+    compH += '<div style="font-size:10px;color:var(--tx3);margin-top:8px;line-height:1.7">' +
+      '⚖️ <strong>تنويه مهم:</strong> هذه فحوصات استرشادية آلية تساعد على التحقق من اكتمال القوائم فقط. ' +
+      'لا تُعد شهادة امتثال للمعايير المحاسبية الدولية، ولا تغني عن مراجعة محاسب قانوني معتمد.</div>';
+    compH += '</div>';
+  }
+
+  // ─── قسم: المطابقة البنكية ───
+  var recoH = '';
+  if (d.reconciliation && d.reconciliation.available) {
+    var rc = d.reconciliation;
+    function txnRows(arr) {
+      var h = '';
+      for (var t = 0; t < arr.length; t++) {
+        var tx = arr[t];
+        var ds = String(tx.date);
+        var dateFmt = ds.length === 8 ? (ds.substr(6,2)+'/'+ds.substr(4,2)+'/'+ds.substr(0,4)) : ds;
+        var amtCls = tx.amount >= 0 ? 'g' : 'r';
+        h += '<tr><td style="font-size:11px">' + dateFmt + '</td>' +
+          '<td class="' + amtCls + '">' + fmt(tx.amount) + ' ر.س</td>' +
+          '<td style="font-size:10px;color:var(--tx2)">' + (tx.desc ? tx.desc.substring(0,45) : '—') + '</td></tr>';
+      }
+      return h;
+    }
+    // حالة التوازن
+    var balanced = Math.abs(rc.difference) < 1;
+    var matchCls = rc.matchRate >= 80 ? 'g' : rc.matchRate >= 50 ? 'a' : 'r';
+
+    recoH = '<div class="sec"><div class="stitle">🏦 المطابقة البنكية</div>';
+    // ملخص بطاقات
+    recoH += '<div class="kgrid" style="margin-bottom:10px">';
+    recoH += '<div class="kcard ' + matchCls + '"><div class="klbl">نسبة المطابقة</div><div class="kval">' + rc.matchRate + '%</div><div class="knote">' + rc.matchedCount + ' من ' + rc.bankCount + ' معاملة</div></div>';
+    recoH += '<div class="kcard a"><div class="klbl">في الكشف فقط</div><div class="kval">' + rc.bankOnlyCount + '</div><div class="knote">' + fmt(rc.bankOnlyTotal) + ' ر.س — قد تكون رسوم غير مسجلة</div></div>';
+    recoH += '<div class="kcard a"><div class="klbl">في الدفتر فقط</div><div class="kval">' + rc.bookOnlyCount + '</div><div class="knote">' + fmt(rc.bookOnlyTotal) + ' ر.س — قد تكون معاملات معلّقة</div></div>';
+    recoH += '</div>';
+
+    // معاملات في الكشف البنكي فقط
+    if (rc.bankOnly.length) {
+      recoH += '<div style="font-size:12px;font-weight:600;color:var(--am);margin:10px 0 6px">⚠️ معاملات ظهرت في كشف البنك ولم تُسجَّل في الدفتر</div>';
+      recoH += '<table class="dtable"><thead><tr><th>التاريخ</th><th>المبلغ</th><th>الوصف</th></tr></thead><tbody>' + txnRows(rc.bankOnly) + '</tbody></table>';
+      if (rc.bankOnlyCount > rc.bankOnly.length) {
+        recoH += '<div style="font-size:10px;color:var(--tx3);margin-top:4px">عرض ' + rc.bankOnly.length + ' من ' + rc.bankOnlyCount + ' — راجع الكشف الكامل</div>';
+      }
+    }
+    // معاملات في الدفتر فقط
+    if (rc.bookOnly.length) {
+      recoH += '<div style="font-size:12px;font-weight:600;color:var(--am);margin:12px 0 6px">⚠️ معاملات سُجِّلت في الدفتر ولم تظهر في كشف البنك</div>';
+      recoH += '<table class="dtable"><thead><tr><th>التاريخ</th><th>المبلغ</th><th>الوصف</th></tr></thead><tbody>' + txnRows(rc.bookOnly) + '</tbody></table>';
+      if (rc.bookOnlyCount > rc.bookOnly.length) {
+        recoH += '<div style="font-size:10px;color:var(--tx3);margin-top:4px">عرض ' + rc.bookOnly.length + ' من ' + rc.bookOnlyCount + '</div>';
+      }
+    }
+    recoH += '<div style="font-size:10px;color:var(--tx3);margin-top:10px;line-height:1.7">' +
+      'ℹ️ المطابقة تتم بناءً على المبلغ والتاريخ. المعاملات غير المتطابقة تحتاج مراجعة يدوية ' +
+      '(قد تكون شيكات معلّقة، رسوم بنكية، أو فروق توقيت في التسجيل).</div>';
+    recoH += '</div>';
+  }
+
+  var html = '<div class="rwrap">';
+  html += '<div class="rhdr"><div class="rmeta"><span class="rbadge">✦ تحليل مكتمل</span><span class="rtime">'+entry.time+' · '+entry.files.length+' ملف · '+d.period+'</span></div>';
+  html += '<div class="ract"><button class="bsm" onclick="doCopy()">📋 نسخ</button><button class="bsm" onclick="doHTML()" id="hbtn">⬇ HTML</button><button class="bsm bpdf" id="pbtn" onclick="doPDF()">⬇ PDF</button></div></div>';
+  if(d.summary) html+='<div class="sbox"><div class="slbl">الملخص التنفيذي</div>'+d.summary+'</div>';
+  html += alertH;
+  html += integH;
+  html += compH;
+  html += recoH;
+  if(d.kpis.length) html+='<div class="kgrid">'+kH+'</div>';
+  if(d.benchmarks.length) html+='<div class="sec"><div class="stitle">📊 النسب الفعلية مقارنة بالمثالية</div><table class="dtable"><thead><tr><th>البند</th><th>الفعلي</th><th>المثالي</th><th>التقييم</th></tr></thead><tbody>'+bmH+'</tbody></table></div>';
+  if(cInner) html+='<div class="sec"><div class="stitle">📈 الرسوم البيانية</div><div class="cgrid">'+cInner+'</div></div>';
+  if(d.branches.length) html+='<div class="sec"><div class="stitle">🏪 أداء الفروع</div>'+brH+'</div>';
+  if(d.top_products.length) html+='<div class="sec"><div class="stitle">🏆 أعلى المنتجات</div><table class="dtable"><thead><tr><th>#</th><th>المنتج</th><th>المبيعات</th><th>الربح</th><th>الهامش</th></tr></thead><tbody>'+prH+'</tbody></table></div>';
+  if(d.expenses.length) html+='<div class="sec"><div class="stitle">📉 هيكل المصروفات</div><table class="dtable"><thead><tr><th>البند</th><th>المبلغ</th><th>الفعلي%</th><th>المثالي%</th><th>التقييم</th></tr></thead><tbody>'+exH+'</tbody></table></div>';
+  if(d.recommendations.length) html+='<div class="sec"><div class="stitle">💡 التوصيات</div>'+rcH+'</div>';
+  if(d.action_plan.length) html+='<div class="sec"><div class="stitle">🗺️ الخطة التنفيذية</div>'+acH+'</div>';
+  html += inH + '</div>';
+  setOut(html);
+
+  setTimeout(function(){
+    if(d.branches.length){var c=document.getElementById('cB');if(c)CHARTS.push(new Chart(c,{type:'doughnut',data:{labels:d.branches.map(function(b){return b.name;}),datasets:[{data:d.branches.map(function(b){return b.sales||0;}),backgroundColor:clrs,borderWidth:2,borderColor:'#1C1C1F'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{color:tc,font:{size:9},padding:5}}}}}));}
+    if(d.expenses.length){var c=document.getElementById('cE');if(c)CHARTS.push(new Chart(c,{type:'bar',data:{labels:d.expenses.map(function(e){return e.label.substring(0,10);}),datasets:[{label:'الفعلي%',data:d.expenses.map(function(e){return e.actual_pct||0;}),backgroundColor:'rgba(201,168,76,.85)',borderRadius:3},{label:'المثالي%',data:d.expenses.map(function(e){return e.ideal_pct||0;}),backgroundColor:'rgba(76,175,122,.5)',borderRadius:3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:tc,font:{size:9},padding:5}}},scales:{x:{ticks:{color:tc,font:{size:8}},grid:{display:false}},y:{ticks:{color:tc,font:{size:8}},grid:{color:gc}}}}}));}
+    if(d.top_products.length){var c=document.getElementById('cP');if(c)CHARTS.push(new Chart(c,{type:'bar',data:{labels:d.top_products.map(function(p){return p.name.substring(0,12);}),datasets:[{label:'المبيعات',data:d.top_products.map(function(p){return p.sales||0;}),backgroundColor:'rgba(201,168,76,.85)',borderRadius:3}]},options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{ticks:{color:tc,font:{size:8},callback:function(v){return fmt(v);}},grid:{color:gc}},y:{ticks:{color:tc,font:{size:8}}}}}}));}
+    if(d.benchmarks.length){var c=document.getElementById('cM');if(c)CHARTS.push(new Chart(c,{type:'bar',data:{labels:d.benchmarks.map(function(b){return b.label.substring(0,12);}),datasets:[{label:'فعلي',data:d.benchmarks.map(function(b){return b.actual_num||0;}),backgroundColor:d.benchmarks.map(function(b){return b.status==='good'?'rgba(76,175,122,.85)':b.status==='bad'?'rgba(224,90,74,.85)':'rgba(224,168,74,.85)';}),borderRadius:3},{label:'مثالي',data:d.benchmarks.map(function(b){return b.ideal_max||0;}),backgroundColor:'rgba(255,255,255,.08)',borderRadius:3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:tc,font:{size:9},padding:5}}},scales:{x:{ticks:{color:tc,font:{size:8}},grid:{display:false}},y:{ticks:{color:tc,font:{size:8}},grid:{color:gc}}}}}));}
+  }, 100);
+}
+
+// ════════════════════════════════════════════════════════════════
+// شاشة مقارنة الفترات — يختار المستخدم تقريرين ويرى الفرق
+// ════════════════════════════════════════════════════════════════
+
+var CMP_STATE = { i1: -1, i2: -1 };
+
+// التقارير التي تحمل مؤشرات قابلة للمقارنة
+function comparableReports() {
+  var list = [];
+  for (var i = 0; i < HIST.length; i++) {
+    if (HIST[i].metrics && Object.keys(HIST[i].metrics).length > 0) {
+      list.push({ idx: i, entry: HIST[i] });
+    }
+  }
+  return list;
+}
+
+function showCompare() {
+  destroyCharts();
+  var reports = comparableReports();
+  if (reports.length < 2) {
+    setOut('<div class="rwrap"><div class="cmp-empty">'
+      + '<div class="cmp-empty-ic">📅</div>'
+      + 'تحتاج تقريرين على الأقل للمقارنة.<br>'
+      + 'حلّل بياناتك لفترتين مختلفتين (مثلاً يناير ثم فبراير) ثم عُد هنا.'
+      + (reports.length === 1 ? '<br><br>لديك حالياً تقرير واحد محفوظ.' : '')
+      + '</div></div>');
+    return;
+  }
+  // افتراضياً: أحدث تقريرين
+  CMP_STATE.i1 = reports[1].idx; // الأقدم
+  CMP_STATE.i2 = reports[0].idx; // الأحدث
+  renderCompareScreen();
+}
+
+function renderCompareScreen() {
+  var reports = comparableReports();
+  var opts1 = '', opts2 = '';
+  reports.forEach(function(r) {
+    var lbl = (r.entry.date || '') + ' · ' + (r.entry.time || '') + ' — ' + (r.entry.q || 'تقرير');
+    lbl = lbl.length > 48 ? lbl.substring(0, 45) + '...' : lbl;
+    opts1 += '<option value="' + r.idx + '"' + (r.idx === CMP_STATE.i1 ? ' selected' : '') + '>' + lbl + '</option>';
+    opts2 += '<option value="' + r.idx + '"' + (r.idx === CMP_STATE.i2 ? ' selected' : '') + '>' + lbl + '</option>';
+  });
+
+  var html = '<div class="rwrap">';
+  html += '<div class="rhdr"><div class="rmeta"><span class="rbadge">📅 مقارنة الفترات</span></div></div>';
+  html += '<div class="sec"><div class="stitle">اختر الفترتين للمقارنة</div>';
+  html += '<div class="cmp-pickbar">';
+  html += '<select class="cmp-sel" id="cmpSel1" onchange="onCmpChange()">' + opts1 + '</select>';
+  html += '<span class="cmp-vs">←  مقابل  ←</span>';
+  html += '<select class="cmp-sel" id="cmpSel2" onchange="onCmpChange()">' + opts2 + '</select>';
+  html += '</div>';
+  html += '<div id="cmpResult"></div>';
+  html += '</div></div>';
+  setOut(html);
+  renderCompareResult();
+}
+
+function onCmpChange() {
+  CMP_STATE.i1 = parseInt(document.getElementById('cmpSel1').value, 10);
+  CMP_STATE.i2 = parseInt(document.getElementById('cmpSel2').value, 10);
+  renderCompareResult();
+}
+
+function renderCompareResult() {
+  var box = document.getElementById('cmpResult');
+  if (!box) return;
+  var e1 = HIST[CMP_STATE.i1], e2 = HIST[CMP_STATE.i2];
+  if (!e1 || !e2) { box.innerHTML = ''; return; }
+  if (CMP_STATE.i1 === CMP_STATE.i2) {
+    box.innerHTML = '<div class="cmp-empty" style="padding:1.5rem">اختر فترتين مختلفتين للمقارنة.</div>';
+    return;
+  }
+  var m1 = e1.metrics || {}, m2 = e2.metrics || {};
+
+  // ترتيب ثابت للمؤشرات
+  var order = ['revenue','grossProfit','netProfit','grossMargin','netMargin',
+               'opExpRatio','productSales','cash','totalAssets','equity','currentRatio'];
+  var rows = '';
+  var shown = 0;
+  for (var o = 0; o < order.length; o++) {
+    var key = order[o];
+    if (!m1[key] || !m2[key]) continue;
+    var a = m1[key], b = m2[key];
+    var delta = '', cls = 'flat', rowCls = '';
+    if (a.value && a.value !== 0) {
+      var change = (b.value - a.value) / Math.abs(a.value) * 100;
+      var improved = (b.dir === 'up') ? (change > 0) : (change < 0);
+      if (Math.abs(change) < 0.1) {
+        delta = '—'; cls = 'flat';
+      } else {
+        delta = (change > 0 ? '▲ +' : '▼ ') + change.toFixed(1) + '%';
+        cls = improved ? 'up' : 'down';
+        rowCls = improved ? 'up' : 'down';
+      }
+    } else {
+      delta = '—';
+    }
+    rows += '<div class="cmp-row ' + rowCls + '">'
+      + '<div class="cmp-lbl">' + b.label + '</div>'
+      + '<div class="cmp-v1">' + fmtMetric(a) + '</div>'
+      + '<div class="cmp-v2">' + fmtMetric(b) + '</div>'
+      + '<div class="cmp-delta ' + cls + '">' + delta + '</div>'
+      + '</div>';
+    shown++;
+  }
+
+  if (!shown) {
+    box.innerHTML = '<div class="cmp-empty" style="padding:1.5rem">'
+      + 'لا توجد مؤشرات مشتركة بين التقريرين للمقارنة.</div>';
+    return;
+  }
+
+  var h = '<div style="margin-top:1rem">';
+  h += '<div class="cmp-head"><div>المؤشر</div>'
+    + '<div>' + (e1.date || 'الفترة الأولى') + '</div>'
+    + '<div>' + (e2.date || 'الفترة الثانية') + '</div>'
+    + '<div style="text-align:left">التغيّر</div></div>';
+  h += '<div class="cmp-grid">' + rows + '</div>';
+  h += '<div style="font-size:10px;color:var(--tx3);margin-top:10px;line-height:1.7">'
+    + 'ℹ️ الأخضر = تحسّن، الأحمر = تراجع. النسبة تُحسب من الفترة الأولى إلى الثانية. '
+    + 'بعض المؤشرات (مثل نسبة المصروفات) يكون انخفاضها هو التحسّن.</div>';
+  h += '</div>';
+  box.innerHTML = h;
+}
+
+// ════════════════════════════════════════════════════════════════
+// أداة المدير المالي 1: مؤشر صحة الشركة (Health Score)
+// ════════════════════════════════════════════════════════════════
+
+// يجد أحدث تقرير يحمل بيانات مالية خام
+function latestFinReport() {
+  for (var i = 0; i < HIST.length; i++) {
+    if (HIST[i].finRaw && (HIST[i].finRaw.income || HIST[i].finRaw.balance)) return HIST[i];
+  }
+  return null;
+}
+
+// يحسب درجة صحة الشركة من 0-100 عبر 4 محاور موزونة
+function computeHealth(fin) {
+  var inc = fin.income || {}, bal = fin.balance || {};
+  var axes = [];
+
+  // المحور 1: الربحية (وزن 30) — هامش صافي الربح
+  if (inc.revenue > 0 && inc.netProfit) {
+    var nm = inc.netProfit / inc.revenue * 100;
+    // 0% → 0 نقطة، 20%+ → كامل
+    var sc = Math.max(0, Math.min(100, nm / 20 * 100));
+    axes.push({ key:'profit', label:'الربحية', weight:30, score:sc,
+      detail:'هامش صافي الربح '+nm.toFixed(1)+'%' });
+  }
+  // المحور 2: السيولة (وزن 30) — نسبة التداول
+  if (bal.currentLiab > 0 && bal.currentAssets > 0) {
+    var cr = bal.currentAssets / bal.currentLiab;
+    // <1 خطر، 1.5-3 مثالي، >3 سيولة معطلة
+    var sc2;
+    if (cr < 1) sc2 = cr * 50;                         // 0→1 يعطي 0-50
+    else if (cr <= 2) sc2 = 50 + (cr - 1) * 50;        // 1→2 يعطي 50-100
+    else if (cr <= 3) sc2 = 100;                       // 2-3 مثالي
+    else sc2 = Math.max(70, 100 - (cr - 3) * 10);      // >3 خصم بسيط
+    axes.push({ key:'liquidity', label:'السيولة', weight:30, score:Math.min(100,sc2),
+      detail:'نسبة التداول '+cr.toFixed(2)+'x' });
+  }
+  // المحور 3: كفاءة التكاليف (وزن 25) — نسبة المصروفات للإيرادات
+  if (inc.revenue > 0 && (inc.cogs || inc.opExpenses)) {
+    var totalCost = (inc.cogs || 0) + (inc.opExpenses || 0);
+    var costRatio = totalCost / inc.revenue * 100;
+    // 60% أو أقل → ممتاز، 100%+ → صفر
+    var sc3 = Math.max(0, Math.min(100, (100 - costRatio) / 40 * 100));
+    axes.push({ key:'efficiency', label:'كفاءة التكاليف', weight:25, score:sc3,
+      detail:'التكاليف '+costRatio.toFixed(1)+'% من الإيرادات' });
+  }
+  // المحور 4: المتانة المالية (وزن 15) — حقوق الملكية للأصول
+  if (bal.totalAssets > 0 && bal.equity) {
+    var eqRatio = bal.equity / bal.totalAssets * 100;
+    // 50%+ → ممتاز، 0% → صفر
+    var sc4 = Math.max(0, Math.min(100, eqRatio / 50 * 100));
+    axes.push({ key:'solvency', label:'المتانة المالية', weight:15, score:sc4,
+      detail:'حقوق الملكية '+eqRatio.toFixed(0)+'% من الأصول' });
+  }
+
+  if (!axes.length) return null;
+  // إعادة توزيع الأوزان على المحاور المتاحة فقط
+  var totalW = 0;
+  axes.forEach(function(a){ totalW += a.weight; });
+  var finalScore = 0;
+  axes.forEach(function(a){
+    a.effWeight = a.weight / totalW;
+    finalScore += a.score * a.effWeight;
+  });
+  return { score: Math.round(finalScore), axes: axes };
+}
+
+function healthGrade(s) {
+  if (s >= 80) return { grade:'ممتازة', cls:'hgreen', col:'var(--gn)',
+    desc:'الوضع المالي قوي. حافظ على الأداء وركّز على النمو.' };
+  if (s >= 60) return { grade:'جيدة', cls:'hgreen', col:'var(--gn)',
+    desc:'الوضع المالي مستقر مع وجود مجال للتحسين في بعض المحاور.' };
+  if (s >= 40) return { grade:'متوسطة', cls:'hamber', col:'var(--am)',
+    desc:'هناك نقاط ضعف تستدعي المتابعة. راجع المحاور المنخفضة أدناه.' };
+  return { grade:'تحتاج تدخّل', cls:'hred', col:'var(--rd)',
+    desc:'الوضع المالي يحتاج معالجة عاجلة. ابدأ بأضعف محور.' };
+}
+
+function showHealth() {
+  destroyCharts();
+  var rep = latestFinReport();
+  if (!rep) {
+    setOut('<div class="rwrap"><div class="cmp-empty"><div class="cmp-empty-ic">💚</div>'
+      + 'لا توجد بيانات مالية كافية.<br>حلّل قائمة دخل أو ميزانية أولاً ثم عُد هنا.</div></div>');
+    return;
+  }
+  var h = computeHealth(rep.finRaw);
+  if (!h) {
+    setOut('<div class="rwrap"><div class="cmp-empty"><div class="cmp-empty-ic">💚</div>'
+      + 'البيانات المتاحة لا تكفي لحساب مؤشر الصحة.<br>'
+      + 'يحتاج المؤشر بيانات الإيرادات والأرباح أو الميزانية.</div></div>');
+    return;
+  }
+  var g = healthGrade(h.score);
+  // قوس دائري SVG
+  var circ = 2 * Math.PI * 56;
+  var off = circ * (1 - h.score / 100);
+
+  var bars = '';
+  h.axes.forEach(function(a){
+    var bc = a.score >= 70 ? 'hbg-green' : a.score >= 45 ? 'hbg-amber' : 'hbg-red';
+    var tc = a.score >= 70 ? 'hgreen' : a.score >= 45 ? 'hamber' : 'hred';
+    bars += '<div class="hb-row">'
+      + '<div class="hb-lbl">'+a.label+'</div>'
+      + '<div class="hb-track"><div class="hb-fill '+bc+'" style="width:'+Math.round(a.score)+'%"></div></div>'
+      + '<div class="hb-val '+tc+'">'+Math.round(a.score)+'</div></div>';
+  });
+  var details = '';
+  h.axes.forEach(function(a){
+    details += '<div style="display:flex;justify-content:space-between;font-size:11px;padding:6px 0;border-bottom:1px solid var(--bd)">'
+      + '<span style="color:var(--tx2)">'+a.label+' <span style="color:var(--tx3)">('+Math.round(a.effWeight*100)+'% من الدرجة)</span></span>'
+      + '<span style="color:var(--tx3)">'+a.detail+'</span></div>';
+  });
+
+  var html = '<div class="rwrap">';
+  html += '<div class="rhdr"><div class="rmeta"><span class="rbadge">💚 مؤشر صحة الشركة</span>'
+    + '<span style="font-size:10px;color:var(--tx3)">من تقرير '+(rep.date||'')+'</span></div></div>';
+  html += '<div class="health-wrap">';
+  html += '<div class="health-gauge"><svg width="132" height="132" viewBox="0 0 132 132">'
+    + '<circle cx="66" cy="66" r="56" fill="none" stroke="var(--dk2)" stroke-width="11"/>'
+    + '<circle cx="66" cy="66" r="56" fill="none" stroke="'+g.col+'" stroke-width="11" stroke-linecap="round" '
+    + 'stroke-dasharray="'+circ.toFixed(1)+'" stroke-dashoffset="'+off.toFixed(1)+'" '
+    + 'transform="rotate(-90 66 66)"/></svg>'
+    + '<div class="health-num"><div class="health-score '+g.cls+'">'+h.score+'</div>'
+    + '<div class="health-of">من 100</div></div></div>';
+  html += '<div class="health-info"><div class="health-grade '+g.cls+'">'+g.grade+'</div>'
+    + '<div class="health-desc">'+g.desc+'</div>'
+    + '<div class="health-bars">'+bars+'</div></div>';
+  html += '</div>';
+  html += '<div class="sec"><div class="stitle">تفصيل المحاور</div>'+details
+    + '<div style="font-size:10px;color:var(--tx3);margin-top:10px;line-height:1.7">'
+    + 'ℹ️ الدرجة تُحسب من 4 محاور: الربحية، السيولة، كفاءة التكاليف، والمتانة المالية. '
+    + 'تُعاد موازنة الأوزان حسب البيانات المتاحة في تقريرك.</div></div>';
+  html += '</div>';
+  setOut(html);
+}
+
+// ════════════════════════════════════════════════════════════════
+// أداة المدير المالي 2: الميزانية مقابل الفعلي (Budget vs Actual)
+// ════════════════════════════════════════════════════════════════
+
+var BUDGET_KEY = 'ls_budget';
+
+function loadBudget() {
+  try { return JSON.parse(localStorage.getItem(BUDGET_KEY)) || {}; }
+  catch(e) { return {}; }
+}
+function saveBudget(b) {
+  try { localStorage.setItem(BUDGET_KEY, JSON.stringify(b)); } catch(e){}
+}
+
+function showBudget() {
+  destroyCharts();
+  var rep = latestFinReport();
+  if (!rep) {
+    setOut('<div class="rwrap"><div class="cmp-empty"><div class="cmp-empty-ic">🎯</div>'
+      + 'لا توجد بيانات مالية.<br>حلّل قائمة دخل أولاً ثم عُد لتحديد الميزانية.</div></div>');
+    return;
+  }
+  renderBudgetScreen();
+}
+
+function renderBudgetScreen() {
+  var rep = latestFinReport();
+  var inc = (rep.finRaw && rep.finRaw.income) || {};
+  var b = loadBudget();
+
+  var html = '<div class="rwrap">';
+  html += '<div class="rhdr"><div class="rmeta"><span class="rbadge">🎯 الميزانية مقابل الفعلي</span>'
+    + '<span style="font-size:10px;color:var(--tx3)">الفعلي من تقرير '+(rep.date||'')+'</span></div></div>';
+
+  // نموذج إدخال الميزانية المخططة
+  html += '<div class="bud-form"><div class="bud-form-t">أدخل أهدافك المخططة لهذه الفترة (اتركها فارغة لتجاهلها):</div>';
+  html += '<div class="bud-inputs">';
+  html += '<div class="bud-field"><label>الإيرادات المستهدفة (ر.س)</label>'
+    + '<input type="number" id="budRevenue" placeholder="مثال: 800000" value="'+(b.revenue||'')+'"></div>';
+  html += '<div class="bud-field"><label>سقف تكلفة المبيعات (ر.س)</label>'
+    + '<input type="number" id="budCogs" placeholder="مثال: 320000" value="'+(b.cogs||'')+'"></div>';
+  html += '<div class="bud-field"><label>سقف المصروفات التشغيلية (ر.س)</label>'
+    + '<input type="number" id="budOpex" placeholder="مثال: 120000" value="'+(b.opExpenses||'')+'"></div>';
+  html += '<div class="bud-field"><label>صافي الربح المستهدف (ر.س)</label>'
+    + '<input type="number" id="budNet" placeholder="مثال: 200000" value="'+(b.netProfit||'')+'"></div>';
+  html += '</div>';
+  html += '<button class="bud-btn" onclick="applyBudget()">حساب الانحرافات</button></div>';
+  html += '<div id="budResult"></div>';
+  html += '</div>';
+  setOut(html);
+  if (b && (b.revenue || b.cogs || b.opExpenses || b.netProfit)) renderBudgetResult();
+}
+
+function applyBudget() {
+  var b = {
+    revenue: parseFloat(document.getElementById('budRevenue').value) || 0,
+    cogs: parseFloat(document.getElementById('budCogs').value) || 0,
+    opExpenses: parseFloat(document.getElementById('budOpex').value) || 0,
+    netProfit: parseFloat(document.getElementById('budNet').value) || 0
+  };
+  saveBudget(b);
+  renderBudgetResult();
+}
+
+function renderBudgetResult() {
+  var box = document.getElementById('budResult');
+  if (!box) return;
+  var rep = latestFinReport();
+  var inc = (rep.finRaw && rep.finRaw.income) || {};
+  var b = loadBudget();
+
+  // كل بند: مفتاح، تسمية، الاتجاه (هل تجاوز الفعلي للمخطط جيد أم سيء؟)
+  var items = [
+    { key:'revenue',    label:'الإيرادات',          actual:inc.revenue||0,   higherIsGood:true  },
+    { key:'cogs',       label:'تكلفة المبيعات',      actual:inc.cogs||0,      higherIsGood:false },
+    { key:'opExpenses', label:'المصروفات التشغيلية', actual:inc.opExpenses||0,higherIsGood:false },
+    { key:'netProfit',  label:'صافي الربح',          actual:inc.netProfit||0, higherIsGood:true  }
+  ];
+  var rows = '', shown = 0;
+  items.forEach(function(it){
+    var budget = b[it.key] || 0;
+    if (budget <= 0) return; // ما حدّد ميزانية لهذا البند
+    shown++;
+    var diff = it.actual - budget;
+    var pct = budget !== 0 ? (diff / budget * 100) : 0;
+    // هل النتيجة جيدة؟
+    var good = it.higherIsGood ? (diff >= 0) : (diff <= 0);
+    var rowCls, statusTxt, pctCls;
+    if (Math.abs(pct) < 2) {
+      rowCls = 'ok'; statusTxt = '✓ مطابق'; pctCls = 'hgreen';
+    } else if (good) {
+      rowCls = 'ok'; pctCls = 'hgreen';
+      statusTxt = it.higherIsGood ? '✓ تجاوز الهدف' : '✓ ضمن السقف';
+    } else {
+      // تجاوز سيء — تحذير أو خطر حسب الحجم
+      var big = Math.abs(pct) >= 10;
+      rowCls = big ? 'over' : 'near';
+      pctCls = big ? 'hred' : 'hamber';
+      statusTxt = it.higherIsGood ? (big?'✗ أقل من الهدف':'⚠ دون الهدف')
+                                  : (big?'✗ تجاوز السقف':'⚠ قارب السقف');
+    }
+    var sign = diff > 0 ? '+' : '';
+    rows += '<div class="bud-row '+rowCls+'">'
+      + '<div class="bud-c">'+it.label+'</div>'
+      + '<div class="bud-c muted">'+fmt(budget)+'</div>'
+      + '<div class="bud-c">'+fmt(it.actual)+'</div>'
+      + '<div class="bud-c '+pctCls+'">'+sign+fmt(diff)+'</div>'
+      + '<div class="bud-pct '+pctCls+'">'+statusTxt+'</div></div>';
+  });
+
+  if (!shown) {
+    box.innerHTML = '<div class="cmp-empty" style="padding:1.5rem">'
+      + 'أدخل قيمة واحدة على الأقل في النموذج أعلاه ثم اضغط "حساب الانحرافات".</div>';
+    return;
+  }
+  var h = '<div class="sec"><div class="stitle">نتيجة المقارنة</div>';
+  h += '<div class="bud-head"><div>البند</div><div>المخطط</div><div>الفعلي</div>'
+    + '<div>الفرق</div><div>الحالة</div></div>';
+  h += rows;
+  h += '<div style="font-size:10px;color:var(--tx3);margin-top:10px;line-height:1.7">'
+    + 'ℹ️ للإيرادات وصافي الربح: تجاوز الهدف = جيد. لتكلفة المبيعات والمصروفات: البقاء تحت السقف = جيد. '
+    + 'ميزانيتك محفوظة وتظهر تلقائياً في كل مرة.</div>';
+  h += '</div>';
+  box.innerHTML = h;
+}
+
+// ════════════════════════════════════════════════════════════════
+// أداة المدير المالي 3: تحليل نقطة التعادل (Break-even Analysis)
+// ════════════════════════════════════════════════════════════════
+
+function showBreakeven() {
+  destroyCharts();
+  var rep = latestFinReport();
+  if (!rep || !rep.finRaw || !rep.finRaw.income) {
+    setOut('<div class="rwrap"><div class="cmp-empty"><div class="cmp-empty-ic">⚖️</div>'
+      + 'لا توجد بيانات قائمة دخل.<br>حلّل قائمة دخل (إيرادات وتكاليف) أولاً ثم عُد هنا.</div></div>');
+    return;
+  }
+  var inc = rep.finRaw.income;
+  if (!inc.revenue || inc.revenue <= 0) {
+    setOut('<div class="rwrap"><div class="cmp-empty"><div class="cmp-empty-ic">⚖️</div>'
+      + 'تحليل نقطة التعادل يحتاج رقم الإيرادات.</div></div>');
+    return;
+  }
+
+  // النموذج المبسّط الواقعي لقائمة دخل عادية:
+  //   التكاليف المتغيرة ≈ تكلفة المبيعات (تتحرك مع المبيعات)
+  //   التكاليف الثابتة   ≈ المصروفات التشغيلية (رواتب، إيجار — ثابتة نسبياً)
+  var revenue = inc.revenue;
+  var variableCost = inc.cogs || 0;
+  var fixedCost = inc.opExpenses || 0;
+
+  // هامش المساهمة = (الإيرادات − التكاليف المتغيرة) ÷ الإيرادات
+  var cmRatio = (revenue - variableCost) / revenue;
+
+  var html = '<div class="rwrap">';
+  html += '<div class="rhdr"><div class="rmeta"><span class="rbadge">⚖️ نقطة التعادل</span>'
+    + '<span style="font-size:10px;color:var(--tx3)">من تقرير '+(rep.date||'')+'</span></div></div>';
+
+  if (cmRatio <= 0) {
+    html += '<div class="ecrd">تكلفة المبيعات تساوي أو تتجاوز الإيرادات — '
+      + 'لا يمكن حساب نقطة تعادل موجبة. هذا مؤشر خطر: كل عملية بيع تخسر. '
+      + 'راجع التسعير أو تكلفة المنتج فوراً.</div></div>';
+    setOut(html);
+    return;
+  }
+
+  // نقطة التعادل = التكاليف الثابتة ÷ نسبة هامش المساهمة
+  var breakeven = fixedCost / cmRatio;
+  var safetyMargin = revenue - breakeven;          // هامش الأمان بالقيمة
+  var safetyPct = safetyMargin / revenue * 100;     // هامش الأمان نسبة
+  var above = safetyMargin >= 0;
+  var fillPct = Math.max(0, Math.min(100, breakeven / revenue * 100));
+
+  // البطل: رقم نقطة التعادل
+  html += '<div class="be-hero"><div class="be-hero-lbl">تحتاج مبيعات لا تقل عن</div>'
+    + '<div class="be-hero-val">'+fmt(Math.round(breakeven))+' ر.س</div>'
+    + '<div class="be-hero-sub '+(above?'hgreen':'hred')+'">'
+    + (above
+        ? '✓ مبيعاتك الحالية ('+fmt(revenue)+') تتجاوز نقطة التعادل بـ '+fmt(Math.round(safetyMargin))+' ر.س'
+        : '✗ مبيعاتك الحالية ('+fmt(revenue)+') أقل من نقطة التعادل بـ '+fmt(Math.abs(Math.round(safetyMargin)))+' ر.س')
+    + '</div>';
+  // شريط بصري
+  html += '<div class="be-bar-wrap"><div class="be-bar">'
+    + '<div class="be-bar-fill" style="width:'+fillPct.toFixed(1)+'%"></div>'
+    + '<div class="be-marker" style="right:'+fillPct.toFixed(1)+'%"></div></div>'
+    + '<div class="be-bar-legend"><span>0</span><span>مبيعاتك: '+fmt(revenue)+' ر.س</span></div></div>';
+  html += '</div>';
+
+  // الأرقام التفصيلية
+  html += '<div class="sec"><div class="stitle">تفصيل الحساب</div><div class="be-grid">';
+  html += '<div class="be-cell"><div class="be-cell-lbl">التكاليف الثابتة (تشغيلية)</div>'
+    + '<div class="be-cell-val">'+fmt(fixedCost)+' ر.س</div></div>';
+  html += '<div class="be-cell"><div class="be-cell-lbl">التكاليف المتغيرة (تكلفة مبيعات)</div>'
+    + '<div class="be-cell-val">'+fmt(variableCost)+' ر.س</div></div>';
+  html += '<div class="be-cell"><div class="be-cell-lbl">نسبة هامش المساهمة</div>'
+    + '<div class="be-cell-val">'+(cmRatio*100).toFixed(1)+'%</div></div>';
+  html += '<div class="be-cell"><div class="be-cell-lbl">هامش الأمان</div>'
+    + '<div class="be-cell-val '+(above?'hgreen':'hred')+'">'+safetyPct.toFixed(1)+'%</div></div>';
+  html += '</div>';
+
+  // سيناريو: تأثير خفض التكاليف الثابتة 10%
+  var beReduced = (fixedCost * 0.9) / cmRatio;
+  var saved = breakeven - beReduced;
+  html += '<div class="be-note">💡 <strong>سيناريو:</strong> لو خفّضت التكاليف الثابتة بنسبة 10%، '
+    + 'تنزل نقطة التعادل إلى <strong>'+fmt(Math.round(beReduced))+' ر.س</strong> '
+    + '(تحسّن بـ '+fmt(Math.round(saved))+' ر.س). '
+    + 'كل ريال توفّره من التكاليف الثابتة يخفّض نقطة التعادل بأكثر من ريال.</div>';
+  html += '<div style="font-size:10px;color:var(--tx3);margin-top:.7rem;line-height:1.7">'
+    + 'ℹ️ نموذج مبسّط: يعتبر تكلفة المبيعات تكاليف متغيرة، والمصروفات التشغيلية تكاليف ثابتة. '
+    + 'للدقة الكاملة، صنّف تكاليفك يدوياً إلى ثابتة ومتغيرة.</div>';
+  html += '</div></div>';
+  setOut(html);
+}
+
+function saveHistory() {
+  try {
+    localStorage.setItem('ls_history', JSON.stringify(HIST));
+  } catch(e) {
+    // التخزين ممتلئ — نحذف الأقدم ونعيد المحاولة
+    if (HIST.length > 5) {
+      HIST = HIST.slice(0, 10);
+      try { localStorage.setItem('ls_history', JSON.stringify(HIST)); } catch(_) {}
+    }
+  }
+}
+
+function loadHistory() {
+  try {
+    var saved = localStorage.getItem('ls_history');
+    if (saved) {
+      var parsed = JSON.parse(saved);
+      if (parsed && parsed.length) HIST = parsed;
+    }
+  } catch(e) { HIST = []; }
+}
+
+function deleteHistoryItem(i, ev) {
+  if (ev) ev.stopPropagation();
+  HIST.splice(i, 1);
+  saveHistory();
+  renderHistory();
+}
+
+function clearHistory() {
+  if (!confirm('هل تريد حذف كل التقارير المحفوظة؟')) return;
+  HIST = [];
+  saveHistory();
+  renderHistory();
+}
+
+function renderHistory() {
+  var sec=document.getElementById('histSec'), list=document.getElementById('histList');
+  if(!HIST.length){sec.style.display='none';return;}
+  sec.style.display='block';
+  var h='';
+  HIST.forEach(function(e,i){
+    var dateStr = e.date ? e.date + ' · ' : '';
+    h += '<div class="hitem" onclick="replay('+i+')">';
+    h += '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:6px">';
+    h += '<div class="hq" style="flex:1">'+e.q+'</div>';
+    h += '<span onclick="deleteHistoryItem('+i+',event)" style="color:var(--tx3);font-size:13px;cursor:pointer;flex-shrink:0" title="حذف">×</span>';
+    h += '</div>';
+    h += '<div class="hm">'+dateStr+e.time+' · '+e.files.length+' ملف</div>';
+    h += '</div>';
+  });
+  h += '<div onclick="clearHistory()" style="text-align:center;padding:5px;font-size:10px;color:var(--tx3);cursor:pointer;margin-top:3px">مسح كل السجل</div>';
+  list.innerHTML=h;
+}
+function replay(i){CUR=HIST[i];renderResult(HIST[i]);}
+
+function doCopy(){if(!CUR)return;var t='تقرير: '+CUR.data.period+'\n'+CUR.data.summary;navigator.clipboard.writeText(t).catch(function(){});var b=document.querySelector('.bsm');if(b){b.textContent='✓ تم';setTimeout(function(){b.textContent='📋 نسخ';},1500);}}
+
+function buildPages(d){
+  var gold='#C9A84C',navy='#0f3460',gray='#f8f9fa',brd='#e8e8e8';
+  var today=new Date().toLocaleDateString('ar-SA');
+  var W=794;
+  var pages=[];
+  var totalPg=1;
+  if(d.benchmarks.length)totalPg++;
+  if(d.branches.length||d.top_products.length)totalPg++;
+  if(d.expenses.length||d.recommendations.length)totalPg++;
+  if(d.action_plan.length)totalPg++;
+  var pg=0;
+
+  function hdr(title,p,tot){
+    return '<div style="background:'+gold+';padding:9px 28px;display:flex;justify-content:space-between;align-items:center"><span style="font-size:11px;color:'+navy+';font-weight:700">صافي — التقرير المالي</span><span style="font-size:11px;color:'+navy+'">صفحة '+p+' من '+tot+'</span></div><div style="background:'+navy+';padding:12px 28px;display:flex;justify-content:space-between;align-items:center"><span style="font-size:15px;font-weight:700;color:#E8C97A">'+title+'</span><span style="font-size:11px;color:rgba(255,255,255,.5)">'+d.period+'</span></div>';
+  }
+  var ftr='<div style="background:#f0f0f0;padding:7px 28px;display:flex;justify-content:space-between;font-size:10px;color:#999;border-top:2px solid '+gold+';margin-top:14px"><span>تقرير سري — صافي</span><span>'+today+'</span></div>';
+  var baseS='font-family:\'IBM Plex Sans Arabic\',Arial,sans-serif;direction:rtl;width:'+W+'px;background:#fff;color:#222;font-size:12px;line-height:1.6;box-sizing:border-box;overflow:hidden;';
+  function stit(t){return '<div style="font-size:13px;font-weight:700;color:'+navy+';margin:14px 28px 8px;padding-bottom:5px;border-bottom:2px solid '+gold+'">'+t+'</div>';}
+
+  // PAGE 1
+  pg++;
+  var kBoxes='';
+  d.kpis.forEach(function(k){
+    var clr=k.status==='good'?'#2d8a4e':k.status==='bad'?'#c0392b':'#d4890a';
+    kBoxes+='<div style="background:#fff;border:1px solid '+brd+';border-radius:8px;padding:12px 14px;border-right:4px solid '+clr+';flex:1;min-width:130px"><div style="font-size:10px;color:#888;margin-bottom:3px">'+k.label+'</div><div style="font-size:17px;font-weight:700;color:'+clr+'">'+k.value+'</div><div style="font-size:10px;color:#999;margin-top:2px">'+k.note+'</div></div>';
+  });
+  var sumBox='';
+  if(d.summary) sumBox='<div style="background:#fff9ed;border-right:4px solid '+gold+';padding:14px 20px;margin:0 28px"><div style="font-size:10px;font-weight:700;color:'+gold+';margin-bottom:4px">الملخص التنفيذي</div><div style="font-size:12px;color:#444;line-height:1.7">'+d.summary+'</div></div>';
+  pages.push('<div style="'+baseS+'"><div style="background:linear-gradient(160deg,#1a1a2e,'+navy+');padding:44px 36px;display:flex;flex-direction:column;justify-content:space-between"><div style="display:flex;justify-content:space-between;align-items:center"><div style="background:'+gold+';width:44px;height:44px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:#0a0a0a">ص</div><div style="text-align:left"><div style="font-size:15px;font-weight:700;color:#E8C97A">صافي</div><div style="font-size:10px;color:rgba(255,255,255,.4)">مديرك المالي الذكي</div></div></div><div style="text-align:center;padding:22px 0"><div style="font-size:26px;font-weight:700;color:#E8C97A;margin-bottom:7px">التقرير المالي الشامل</div><div style="font-size:13px;color:rgba(255,255,255,.7);margin-bottom:4px">Financial Analysis Report</div><div style="width:55px;height:2px;background:'+gold+';margin:10px auto"></div><div style="font-size:13px;color:rgba(255,255,255,.5)">'+d.period+'</div></div></div>'+sumBox+''+stit('المؤشرات المالية الرئيسية')+'<div style="display:flex;flex-wrap:wrap;gap:8px;padding:0 28px 14px">'+kBoxes+'</div>'+ftr+'</div>');
+
+  // PAGE 2 - BENCHMARKS
+  if(d.benchmarks.length){
+    pg++;
+    var bmRows='';
+    d.benchmarks.forEach(function(b,i){
+      var clr=b.status==='good'?'#2d8a4e':b.status==='bad'?'#c0392b':'#d4890a';
+      var st=b.status==='good'?'✓ ممتاز':b.status==='bad'?'✗ يحتاج تحسين':'⚠ متوسط';
+      var pct=b.actual_num&&b.ideal_max?Math.min(b.actual_num/b.ideal_max*100,100):50;
+      bmRows+='<tr style="background:'+(i%2===0?gray:'#fff')+'"><td style="padding:8px 12px;border-bottom:1px solid '+brd+';font-weight:600;border-right:3px solid '+clr+'">'+b.label+'</td><td style="padding:8px 12px;border-bottom:1px solid '+brd+';font-weight:700;color:'+clr+'">'+b.actual+'</td><td style="padding:8px 12px;border-bottom:1px solid '+brd+';color:#666">'+b.ideal+'</td><td style="padding:8px 12px;border-bottom:1px solid '+brd+'"><div style="background:#e0e0e0;border-radius:3px;height:7px;overflow:hidden"><div style="background:'+clr+';height:100%;width:'+pct.toFixed(0)+'%;border-radius:3px"></div></div></td><td style="padding:8px 12px;border-bottom:1px solid '+brd+';font-weight:600;color:'+clr+';font-size:11px">'+st+'</td><td style="padding:8px 12px;border-bottom:1px solid '+brd+';font-size:10px;color:#888">'+b.note+'</td></tr>';
+    });
+    pages.push('<div style="'+baseS+'">'+hdr('مقارنة النسب الفعلية بالمثالية',pg,totalPg)+'<div style="padding:0 28px 14px"><table style="width:100%;border-collapse:collapse;font-size:11px;margin-top:10px"><thead><tr style="background:'+navy+'"><th style="padding:9px 12px;color:#E8C97A;text-align:right">البند</th><th style="padding:9px 12px;color:#E8C97A;text-align:right">الفعلي</th><th style="padding:9px 12px;color:#E8C97A;text-align:right">المثالي</th><th style="padding:9px 12px;color:#E8C97A;text-align:right;width:90px">التقدم</th><th style="padding:9px 12px;color:#E8C97A;text-align:right">التقييم</th><th style="padding:9px 12px;color:#E8C97A;text-align:right">ملاحظة</th></tr></thead><tbody>'+bmRows+'</tbody></table></div>'+ftr+'</div>');
+  }
+
+  // PAGE 3 - BRANCHES + PRODUCTS
+  if(d.branches.length||d.top_products.length){
+    pg++;
+    var brClrs=['#C9A84C','#4CAF7A','#4A8FE0','#E05A4A'];
+    var mxS=Math.max.apply(null,d.branches.map(function(b){return b.sales||0;}).concat([1]));
+    var brRows=''; d.branches.forEach(function(b,i){var pct=((b.sales||0)/mxS*100);brRows+='<tr style="background:'+(i%2===0?gray:'#fff')+'"><td style="padding:10px 12px;border-bottom:1px solid '+brd+';font-weight:700;border-right:4px solid '+brClrs[i%4]+'">'+b.name+'</td><td style="padding:10px 12px;border-bottom:1px solid '+brd+';font-weight:600;color:'+navy+'">'+fmt(b.sales)+' ر.س</td><td style="padding:10px 12px;border-bottom:1px solid '+brd+';color:#2d8a4e;font-weight:600">'+fmt(b.profit||0)+' ر.س</td><td style="padding:10px 12px;border-bottom:1px solid '+brd+'"><div style="background:#e0e0e0;border-radius:3px;height:8px;overflow:hidden"><div style="background:'+brClrs[i%4]+';height:100%;width:'+pct.toFixed(0)+'%;border-radius:3px"></div></div><div style="font-size:10px;color:#888;margin-top:2px">'+pct.toFixed(1)+'%</div></td></tr>';});
+    var pRows=''; d.top_products.forEach(function(p,i){var mc=p.margin>30?'#2d8a4e':p.margin>15?'#d4890a':'#c0392b',medal=i===0?'🥇':i===1?'🥈':i===2?'🥉':i+1;pRows+='<tr style="background:'+(i%2===0?gray:'#fff')+'"><td style="padding:7px 12px;border-bottom:1px solid '+brd+';font-weight:700;color:#888;width:35px">'+medal+'</td><td style="padding:7px 12px;border-bottom:1px solid '+brd+';font-weight:600">'+p.name+'</td><td style="padding:7px 12px;border-bottom:1px solid '+brd+';color:'+navy+';font-weight:600">'+fmt(p.sales)+' ر.س</td><td style="padding:7px 12px;border-bottom:1px solid '+brd+';color:#2d8a4e;font-weight:600">'+fmt(p.profit||0)+' ر.س</td><td style="padding:7px 12px;border-bottom:1px solid '+brd+';color:'+mc+';font-weight:700">'+(p.margin?p.margin.toFixed(1)+'%':'—')+'</td></tr>';});
+    var p3='<div style="'+baseS+'">'+hdr('أداء الفروع والمنتجات',pg,totalPg)+'<div style="padding:0 28px 14px">';
+    if(brRows) p3+=stit('أداء الفروع')+'<table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:'+navy+'"><th style="padding:9px 12px;color:#E8C97A;text-align:right">الفرع</th><th style="padding:9px 12px;color:#E8C97A;text-align:right">المبيعات</th><th style="padding:9px 12px;color:#E8C97A;text-align:right">الربح</th><th style="padding:9px 12px;color:#E8C97A;text-align:right">الحصة</th></tr></thead><tbody>'+brRows+'</tbody></table>';
+    if(pRows) p3+=stit('أعلى المنتجات أداءً')+'<table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:'+navy+'"><th style="padding:8px 12px;color:#E8C97A;text-align:right">#</th><th style="padding:8px 12px;color:#E8C97A;text-align:right">المنتج</th><th style="padding:8px 12px;color:#E8C97A;text-align:right">المبيعات</th><th style="padding:8px 12px;color:#E8C97A;text-align:right">الربح</th><th style="padding:8px 12px;color:#E8C97A;text-align:right">الهامش</th></tr></thead><tbody>'+pRows+'</tbody></table>';
+    p3+='</div>'+ftr+'</div>';
+    pages.push(p3);
+  }
+
+  // PAGE 4 - EXPENSES + RECS
+  if(d.expenses.length||d.recommendations.length){
+    pg++;
+    var exRows=''; d.expenses.forEach(function(e,i){var clr=e.status==='good'?'#2d8a4e':e.status==='bad'?'#c0392b':'#d4890a',st=e.status==='good'?'✓ جيد':e.status==='bad'?'✗ مرتفع':'⚠ مراقبة';exRows+='<tr style="background:'+(i%2===0?gray:'#fff')+'"><td style="padding:8px 12px;border-bottom:1px solid '+brd+';font-weight:600;border-right:3px solid '+clr+'">'+e.label+'</td><td style="padding:8px 12px;border-bottom:1px solid '+brd+';font-weight:600;color:'+navy+'">'+fmt(e.actual)+' ر.س</td><td style="padding:8px 12px;border-bottom:1px solid '+brd+';font-weight:700;color:'+clr+'">'+(e.actual_pct||0)+'%</td><td style="padding:8px 12px;border-bottom:1px solid '+brd+';color:#666">'+(e.ideal_pct||0)+'%</td><td style="padding:8px 12px;border-bottom:1px solid '+brd+';font-weight:700;color:'+clr+';font-size:11px">'+st+'</td></tr>';});
+    var rcCards=''; d.recommendations.forEach(function(r){var clr=r.impact==='high'?'#c0392b':r.impact==='low'?'#2d8a4e':'#d4890a',badge=r.impact==='high'?'أولوية عالية':r.impact==='low'?'منخفضة':'متوسطة';rcCards+='<div style="background:#fff9ed;border:1px solid #f0d9a0;border-radius:8px;padding:11px 13px;margin-bottom:7px;border-right:4px solid '+clr+'"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px;gap:10px"><span style="font-size:12px;font-weight:700;color:'+navy+';flex:1">'+r.title+'</span><span style="background:'+clr+';color:#fff;padding:2px 9px;border-radius:10px;font-size:10px;font-weight:700;flex-shrink:0">'+badge+'</span></div><div style="font-size:11px;color:#555;line-height:1.6">'+r.desc+'</div></div>';});
+    var p4='<div style="'+baseS+'">'+hdr('المصروفات والتوصيات',pg,totalPg)+'<div style="padding:0 28px 14px">';
+    if(exRows) p4+=stit('هيكل المصروفات')+'<table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:8px"><thead><tr style="background:'+navy+'"><th style="padding:9px 12px;color:#E8C97A;text-align:right">البند</th><th style="padding:9px 12px;color:#E8C97A;text-align:right">المبلغ</th><th style="padding:9px 12px;color:#E8C97A;text-align:right">الفعلي%</th><th style="padding:9px 12px;color:#E8C97A;text-align:right">المثالي%</th><th style="padding:9px 12px;color:#E8C97A;text-align:right">التقييم</th></tr></thead><tbody>'+exRows+'</tbody></table>';
+    if(rcCards) p4+=stit('التوصيات الاستراتيجية')+rcCards;
+    p4+='</div>'+ftr+'</div>';
+    pages.push(p4);
+  }
+
+  // PAGE 5 - ACTION PLAN
+  if(d.action_plan.length){
+    pg++;
+    var acCards=''; d.action_plan.forEach(function(a){var tgs='';if(a.timeline)tgs+='<span style="background:#fff3cd;color:#856404;padding:3px 9px;border-radius:10px;font-size:10px;font-weight:600">⏱ '+a.timeline+'</span>';if(a.kpi)tgs+='<span style="background:#d4edda;color:#155724;padding:3px 9px;border-radius:10px;font-size:10px;font-weight:600;margin-right:5px">📈 '+a.kpi+'</span>';acCards+='<div style="display:flex;gap:12px;background:#f8fafc;border:1px solid #dce8f0;border-radius:9px;padding:13px;margin-bottom:9px"><div style="width:32px;height:32px;background:linear-gradient(135deg,'+gold+',#E8C97A);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#0a0a0a;flex-shrink:0">'+a.step+'</div><div style="flex:1"><div style="font-size:13px;font-weight:700;color:'+navy+';margin-bottom:3px">'+a.title+'</div><div style="font-size:11px;color:#555;line-height:1.6;margin-bottom:7px">'+a.detail+'</div><div style="display:flex;gap:7px;flex-wrap:wrap">'+tgs+'</div></div></div>';});
+    pages.push('<div style="'+baseS+'">'+hdr('الخطة التنفيذية',pg,totalPg)+'<div style="padding:0 28px 14px">'+stit('خطة التحسين والتطوير')+acCards+'</div>'+ftr+'</div>');
+  }
+  return pages;
+}
+
+function doPDF(){
+  if(!CUR)return;
+  var btn=document.getElementById('pbtn');
+  btn.disabled=true;
+  var pages=buildPages(CUR.data);
+  var jsPDF=window.jspdf.jsPDF;
+  var pdf=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+  var PW=210;
+
+  function doPage(i){
+    if(i>=pages.length){pdf.save('تقرير-مالي-'+CUR.data.period+'.pdf');btn.textContent='⬇ PDF';btn.disabled=false;return;}
+    btn.textContent='⏳ '+(i+1)+'/'+pages.length+'...';
+    var div=document.createElement('div');
+    div.style.cssText='position:fixed;top:0;left:-9999px;width:794px;min-height:1px;background:#fff;direction:rtl;font-family:IBM Plex Sans Arabic,Arial,sans-serif;box-sizing:border-box;';
+    div.innerHTML=pages[i];
+    document.body.appendChild(div);
+    setTimeout(function(){
+      html2canvas(div,{scale:2,useCORS:true,backgroundColor:'#ffffff',width:794,windowWidth:794,logging:false}).then(function(canvas){
+        document.body.removeChild(div);
+        if(i>0)pdf.addPage();
+        var imgData=canvas.toDataURL('image/jpeg',0.94);
+        var imgH=(canvas.height/canvas.width)*PW;
+        pdf.addImage(imgData,'JPEG',0,0,PW,Math.min(imgH,297));
+        doPage(i+1);
+      }).catch(function(e){document.body.removeChild(div);alert('خطأ: '+e.message);btn.textContent='⬇ PDF';btn.disabled=false;});
+    },180);
+  }
+  doPage(0);
+}
+
+function doHTML(){
+  if(!CUR)return;
+  var btn=document.getElementById('hbtn');
+  btn.textContent='⏳...';btn.disabled=true;
+  var pages=buildPages(CUR.data);
+  var pagesHTML='';
+  pages.forEach(function(p){pagesHTML+='<div class="page">'+p+'</div>\n';});
+  var css='*{box-sizing:border-box;margin:0;padding:0}body{font-family:\'IBM Plex Sans Arabic\',Arial,sans-serif;background:#f0f2f5;direction:rtl;padding:20px}.page{width:794px;margin:0 auto 20px;background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,.12)}@media print{body{background:#fff;padding:0}.page{box-shadow:none;margin:0;border-radius:0;page-break-after:always}}@media(max-width:840px){.page{width:100%}}';
+  var full='<!DOCTYPE html>\n<html lang="ar" dir="rtl">\n<head>\n<meta charset="UTF-8">\n<meta name="viewport" content="width=device-width,initial-scale=1">\n<title>التقرير المالي</title>\n<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">\n<style>'+css+'</style>\n</head>\n<body>\n'+pagesHTML+'</body>\n</html>';
+  var blob=new Blob([full],{type:'text/html;charset=utf-8'});
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='تقرير-مالي-'+CUR.data.period+'.html';
+  a.click();
+  URL.revokeObjectURL(a.href);
+  btn.textContent='⬇ HTML';btn.disabled=false;
+}
+</script>
+</body>
+</html>
