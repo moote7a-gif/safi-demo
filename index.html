@@ -30,24 +30,119 @@ body { background: var(--dk); color: var(--tx); display: flex; flex-direction: c
 .logo-name { font-size: 14px; font-weight: 600; }
 .logo-sub { font-size: 10px; color: var(--tx3); }
 
-/* ── تحسينات الجوال ── */
+/* ════════ تحسينات الجوال — نسخة كاملة ════════ */
 @media (max-width: 768px) {
-  .topbar { padding: 0 1rem; height: 50px; }
-  .logo-mark { width: 26px; height: 26px; font-size: 12px; }
-  .logo-name { font-size: 13px; }
+  /* الشريط العلوي */
+  .topbar { padding: 0 .9rem; height: 52px; }
+  .logo-mark { width: 28px; height: 28px; font-size: 13px; }
+  .logo-name { font-size: 14px; }
   .logo-sub { display: none; }
-  .cont { flex-direction: column; }
-  .sb { width: 100%; max-width: 100%; border-left: none; border-bottom: 1px solid var(--bd); }
-  .sb.hide { transform: translateY(-100%); }
-  .main { padding: .8rem; }
-  .rwrap { padding: 1rem; }
-  .health-wrap { flex-direction: column; align-items: stretch; }
-  .health-gauge { width: 110px; height: 110px; margin: 0 auto; }
-  .cmp-grid, .bud-head, .bud-row, .cmp-head, .cmp-row { grid-template-columns: 1fr; gap: 6px; }
+
+  /* تحويل التخطيط لعمودي: المحتوى فوق، القائمة تحت */
+  .app { flex-direction: column; overflow: visible; }
+  .sidebar {
+    width: 100%; flex-shrink: 0; order: 2;
+    border-left: none; border-top: 1px solid var(--bd);
+    max-height: none; overflow-y: visible;
+  }
+  .main { order: 1; overflow: visible; }
+
+  /* منطقة الإدخال والتحليل */
+  .pbar { padding: .7rem .8rem; gap: 6px; }
+  .pinput { font-size: 16px; padding: 11px 12px; height: 46px; }
+  .pinput:focus { height: 80px; }
+  .bsend { padding: 0 16px; font-size: 14px; height: 46px; }
+
+  /* منطقة عرض النتائج — تأخذ ارتفاعاً كافياً */
+  .out { padding: .7rem; min-height: 60vh; }
+  .rwrap { padding: .2rem; }
+
+  /* أزرار التحليلات الجاهزة — أكبر للمس */
+  .qbtn { font-size: 13px; padding: 11px 11px; margin-bottom: 6px; }
+  .drop { padding: 1.3rem 1rem; }
+  .drop-ic { font-size: 26px; }
+  .drop-t { font-size: 14px; }
+  .sb-sec { padding: .9rem; }
+  .sb-lbl { font-size: 11px; }
+
+  /* رأس التقرير وأزرار التصدير */
+  .rhdr { flex-direction: column; align-items: stretch; gap: 8px; }
+  .ract { justify-content: stretch; }
+  .ract .bsm { flex: 1; padding: 9px 8px; font-size: 12px; text-align: center; }
+
+  /* الملخص التنفيذي والأقسام */
+  .sbox { font-size: 14px; padding: 13px; }
+  .sec { padding: .8rem; }
+  .stitle { font-size: 13px; }
+
+  /* بطاقات المؤشرات — عمود واحد على الشاشات الصغيرة */
+  .kgrid { grid-template-columns: 1fr 1fr; gap: 7px; }
+  .kcard { padding: 10px 11px; }
+  .kval { font-size: 15px; }
+
+  /* الرسوم البيانية — فوق بعض */
+  .cgrid { grid-template-columns: 1fr; gap: .6rem; }
+  .cbox canvas { max-height: 200px; }
+
+  /* الجداول — تمرير أفقي بدل ما تتقصّ */
+  .dtable { font-size: 12px; display: block; }
+  .sec > .dtable,
+  .sec table.dtable { overflow-x: auto; white-space: nowrap; }
+  .dtable th, .dtable td { padding: 8px 9px; }
+
+  /* مؤشر صحة الشركة */
+  .health-wrap { flex-direction: column; align-items: stretch; padding: 1rem; }
+  .health-gauge { margin: 0 auto .5rem; }
+  .hb-row { grid-template-columns: 80px 1fr 38px; }
+
+  /* مقارنة الفترات والميزانية — كروت عمودية */
   .cmp-head, .bud-head { display: none; }
-  .cmp-lbl, .bud-c { font-size: 11px; }
+  .cmp-row {
+    grid-template-columns: 1fr 1fr; gap: 6px 10px;
+    padding: 11px 12px;
+  }
+  .cmp-row .cmp-lbl { grid-column: 1 / -1; font-size: 13px; font-weight: 600; }
+  .cmp-delta { text-align: right; }
+  .bud-row {
+    grid-template-columns: 1fr 1fr; gap: 6px 10px;
+    padding: 11px 12px;
+  }
+  .bud-row .bud-c:first-child { grid-column: 1 / -1; font-size: 13px; }
+  .bud-pct { grid-column: 1 / -1; text-align: right; }
   .bud-inputs { grid-template-columns: 1fr; }
-  .kboxes { grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 7px; }
+  .cmp-pickbar { flex-direction: column; align-items: stretch; }
+  .cmp-sel { width: 100%; font-size: 14px; }
+  .cmp-vs { text-align: center; }
+
+  /* نقطة التعادل */
+  .be-hero-val { font-size: 24px; }
+  .be-grid { grid-template-columns: 1fr 1fr; }
+
+  /* بطاقات التوصيات والخطة */
+  .acard, .rcard { padding: 11px; }
+  .atitle, .rtitle { font-size: 13px; }
+  .adetail, .rdesc { font-size: 12px; }
+
+  /* شاشة الإعداد الأولى */
+  .scard { width: 92%; max-width: 400px; padding: 1.5rem 1.3rem; }
+
+  /* التقارير السابقة */
+  .hitem { padding: 10px; }
+  .hq { font-size: 12px; }
+}
+
+/* شاشات صغيرة جداً */
+@media (max-width: 400px) {
+  .kgrid { grid-template-columns: 1fr; }
+  .be-grid { grid-template-columns: 1fr; }
+  .ract { flex-wrap: wrap; }
+}
+
+/* على الجوال: نسمح للصفحة كلها بالتمرير حتى يظهر التقرير الطويل بالكامل */
+@media (max-width: 768px) {
+  html, body { height: auto; min-height: 100%; overflow-y: auto; overflow-x: hidden; }
+  body { display: block; }
+  .topbar { position: sticky; top: 0; z-index: 50; }
 }
 .logo-sub { font-size: 10px; color: var(--tx3); }
 .api-pill { display: flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 20px; border: 1px solid var(--bd); cursor: pointer; font-size: 11px; color: var(--tx2); background: none; font-family: var(--font); }
